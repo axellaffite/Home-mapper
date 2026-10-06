@@ -113,6 +113,18 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 /* Export PDF : rendu hors écran, couleurs d'impression */
 .print-theme{--paper:#fff;--sheet:#fff;--ink:#111;--ink-soft:#555;--line:#999;--grid:#ddd;--laser:#111;--fill:none;--elec:#1D4F91;position:fixed;left:-10000px;top:0;width:1123px;height:794px;overflow:hidden}
 .print-theme .rn,.print-theme .ra{stroke:none}
+.print-theme .joint{fill:#111;opacity:1}
+/* Murs mitoyens */
+.joint{fill:var(--ink-soft);opacity:.3}
+.jbadge circle{fill:var(--laser)}
+.jbadge text{fill:#fff;font:600 11px "Barlow Condensed",sans-serif;text-anchor:middle}
+.joints li{flex-wrap:wrap;gap:6px 10px}
+.joints .jn{flex:none;width:24px;height:24px;border-radius:50%;background:var(--laser);color:#fff;font:600 14px/24px "Barlow Condensed",sans-serif;text-align:center}
+.joints li.off .jn{background:var(--line)}
+.joints .jt{flex:1 1 140px}
+.joints .jt b{display:block;font-weight:600}
+.joints .jt span{font-size:14px;color:var(--ink-soft)}
+.joints li.off .jt{opacity:.55}
 @media (min-width:900px){ .toast{bottom:calc(24px + env(safe-area-inset-bottom,0px));margin-left:calc(var(--nav-w) / -2)} }
 /* Overlay AR */
 #overlay{position:fixed;inset:0;z-index:10;color:#fff;font-family:Barlow,system-ui,sans-serif;pointer-events:none}
@@ -184,6 +196,9 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 .edit .mid path{stroke:var(--ink-soft);stroke-width:1.8}
 .edit .vtx,.edit .mid,.sheet.editing [data-item]{cursor:grab}
 .dev .dhit{fill:transparent;stroke:none}
+.meas line{stroke:var(--laser);stroke-width:1.2;stroke-dasharray:4 3}
+.meas line.guide{stroke:var(--elec);stroke-dasharray:2 3}
+.meas text{fill:var(--laser);font:600 13px "Barlow Condensed",sans-serif;text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:var(--sheet);stroke-width:3.5px;stroke-linejoin:round}
 .dim[data-wall]{cursor:pointer}
 .walls .num-in input{width:70px}
 /* Outils RA */
@@ -258,6 +273,9 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
       <button class="btn btn-ghost" id="drawBtn">Dessiner une pièce</button>
       <button class="btn btn-ghost" id="arrangeBtn">Ajuster la disposition</button>
     </div>
+    <h3 style="margin:16px 0 0;font-size:17px">Murs mitoyens</h3>
+    <p style="margin:4px 0 0">Les murs face à face sont réunis en un seul mur épais, plein sur le PDF. Changez l’épaisseur pour décaler la plus petite des deux pièces. Pour un mur partiel, ajoutez un « Passage libre » dans l’une des pièces.</p>
+    <ul class="list joints" id="jointList"></ul>
   </div>
   <div class="arrange hidden" id="arrangePanel">
     <p id="arrangeHint">Touchez une pièce puis faites-la glisser pour la déplacer. Les pointillés montrent les autres niveaux, pour aligner les escaliers.</p>
@@ -471,7 +489,8 @@ const OPENINGS = {
   coulissante: { label: 'Porte coulissante', w: 0.83 },
   fenetre:     { label: 'Fenêtre', w: 1.20 },
   pfenetre:    { label: 'Porte-fenêtre', w: 1.40 },
-  baie:        { label: 'Baie coulissante', w: 2.00 }
+  baie:        { label: 'Baie coulissante', w: 2.00 },
+  passage:     { label: 'Passage libre', w: 0.90, m: true, open: true } // mur interrompu, sans menuiserie
 };
 const wallLen = (p, i) => dist(p[i], p[(i+1)%p.length]);
 function wallPoint(p, i, t){ const a = p[i], b = p[(i+1)%p.length]; return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t]; }
@@ -505,9 +524,12 @@ function openingAt(p, q, w, dir = 1){
   return dir > 0 ? { wall: i, t0, t1 } : { wall: i, t0: t1, t1: t0 };
 }
 // Appareil ramené au point q : contre le mur le plus proche, ou au plafond à sa distance du mur
+// Au plafond, t n'est pas borné au segment : la position est restituée exactement, même près d'un mur en biais
 function anchorDevice(p, it, q){
-  const i = nearestWall(p, q), t = projT(p, i, q);
-  if (DEVICES[it.type] && DEVICES[it.type].wall) return { ...it, wall: i, t };
+  const i = nearestWall(p, q);
+  if (DEVICES[it.type] && DEVICES[it.type].wall) return { ...it, wall: i, t: projT(p, i, q) };
+  const a = p[i], b = p[(i+1)%p.length], dx = b[0]-a[0], dy = b[1]-a[1];
+  const t = ((q[0]-a[0])*dx + (q[1]-a[1])*dy) / (dx*dx + dy*dy || 1);
   const F = wallPoint(p, i, t), n = inwardNormal(p, i);
   return { ...it, wall: i, t, d: Math.max(0.05, (q[0]-F[0])*n[0] + (q[1]-F[1])*n[1]) };
 }
@@ -663,6 +685,42 @@ function editHandles(p, pts, selCorner){
   return { mids: `<g class="edit">${mids}</g>`, vtx: `<g class="edit">${vtx}</g>` };
 }
 const MID_INSET = 34; // décalage des « + » vers l'intérieur, au-delà des symboles muraux
+/* Cotes de placement de l'élément sélectionné : distances aux murs dans les quatre directions
+   (appareils), ou aux coins le long du mur (ouvertures) */
+function rayHit(p, q, d){
+  let best = Infinity;
+  p.forEach((a, i) => {
+    const b = p[(i+1)%p.length], ex = b[0]-a[0], ey = b[1]-a[1], den = d[0]*ey - d[1]*ex;
+    if (Math.abs(den) < 1e-9) return;
+    const t = ((a[0]-q[0])*ey - (a[1]-q[1])*ex) / den, u = ((a[0]-q[0])*d[1] - (a[1]-q[1])*d[0]) / den;
+    if (t > 1e-6 && u >= -1e-9 && u <= 1 + 1e-9) best = Math.min(best, t);
+  });
+  return best;
+}
+function measureSVG(room, id, guides, V, ang){
+  const p = room.pts, it = (room.items || []).find(i => i.id === id);
+  if (!it || !(it.wall < p.length)) return '';
+  const seg = (A, B, off = [0, 0]) => {
+    const L = dist(A, B); if (L < 0.03) return '';
+    const [x1, y1] = V(A), [x2, y2] = V(B), mx = (x1 + x2)/2 + off[0], my = (y1 + y2)/2 + off[1];
+    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/><text x="${mx.toFixed(1)}" y="${my.toFixed(1)}">${fmt(L)}</text>`;
+  };
+  let g = '';
+  if (it.kind === 'device'){
+    const q = devicePos(p, it);
+    // directions de l'écran (haut, bas, gauche, droite) ramenées dans le repère de la pièce
+    [[0, -1], [0, 1], [-1, 0], [1, 0]].forEach(([sx, sy]) => {
+      const d = rotPts([[sx, sy]], -ang)[0], t = rayHit(p, q, d);
+      if (isFinite(t)) g += seg(q, [q[0] + d[0]*t, q[1] + d[1]*t], sx ? [0, -8] : [10, 0]);
+    });
+    guides.forEach(r => { const [x1, y1] = V(q), [x2, y2] = V(r); g += `<line class="guide" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`; });
+  } else {
+    const a = p[it.wall], b = p[(it.wall+1)%p.length], lo = Math.min(it.t0, it.t1), hi = Math.max(it.t0, it.t1);
+    const n = inwardNormal(p, it.wall), k = 0.28, sh = X => [X[0] + n[0]*k, X[1] + n[1]*k];
+    g += seg(sh(a), sh(wallPoint(p, it.wall, lo))) + seg(sh(wallPoint(p, it.wall, hi)), sh(b));
+  }
+  return `<g class="meas" pointer-events="none">${g}</g>`;
+}
 function roomSVG(room, o = {}){
   const raw = room.pts;
   const f = o.frame || roomFrame(raw, 0, o.edit ? 60 : 46); // orientation du plan du logement
@@ -686,6 +744,7 @@ function roomSVG(room, o = {}){
     <polygon class="room" style="fill:var(--fill)" points="${poly}"/>
     ${corners}${hd.mids}
     ${itemsSVG(p, room.items, T, S, { sel: o.sel, k: 1.3, hit: true })}${lab}
+    ${o.measure ? measureSVG(room, o.measure, o.guides || [], ([x, y]) => T(rotPts([[x, y]], ang)[0]), ang) : ''}
     ${hd.vtx}
     <g class="scale"><line x1="${pad}" y1="${H-14}" x2="${pad+S}" y2="${H-14}"/><text x="${pad+S+6}" y="${H-14}" dominant-baseline="middle">1 m</text></g></svg>`;
   return { svg, tf: f };
@@ -713,6 +772,85 @@ function labelSpot(r, lp, avoid){
   }
   return best;
 }
+/* Murs mitoyens : deux murs face à face, à moins de JOINT.maxGap, forment un seul mur épais.
+   L'écart mesuré est l'épaisseur réelle du mur ; il est rempli (gris à l'écran, plein sur le PDF),
+   et les ouvertures de l'une des pièces traversent toute l'épaisseur. */
+const JOINT = { maxGap: 0.45, minGap: -0.05, cos: 0.985, minOverlap: 0.2, minWall: 0.3, maxT: 40 };
+const jointKey = (ra, wa, rb, wb) => [`${ra}:${wa}`, `${rb}:${wb}`].sort().join('|');
+const dot = (a, b) => a[0]*b[0] + a[1]*b[1];
+function facingWalls(A, wa, B, wb){
+  const p = A.pts, q = B.pts, LA = wallLen(p, wa);
+  if (LA < JOINT.minWall || wallLen(q, wb) < JOINT.minWall) return null;
+  const na = inwardNormal(p, wa), nb = inwardNormal(q, wb);
+  if (dot(na, nb) > -JOINT.cos) return null; // murs parallèles, pièces de part et d'autre
+  const a0 = p[wa], a1 = p[(wa+1)%p.length], ua = [(a1[0]-a0[0])/LA, (a1[1]-a0[1])/LA];
+  const b0 = q[wb], b1 = q[(wb+1)%q.length];
+  const gap = X => -dot([X[0]-a0[0], X[1]-a0[1]], na), g0 = gap(b0), g1 = gap(b1);
+  if (Math.min(g0, g1) < JOINT.minGap || Math.max(g0, g1) > JOINT.maxGap) return null;
+  const sb0 = dot([b0[0]-a0[0], b0[1]-a0[1]], ua), sb1 = dot([b1[0]-a0[0], b1[1]-a0[1]], ua);
+  const s0 = Math.max(0, Math.min(sb0, sb1)), s1 = Math.min(LA, Math.max(sb0, sb1));
+  if (s1 - s0 < JOINT.minOverlap) return null;
+  return { A, wa, B, wb, s0, s1, gap: (g0 + g1) / 2, a0, ua, na, nb, b0 };
+}
+function detectJoints(h, levelId){
+  const rooms = h.rooms.filter(r => !levelId || r.levelId === levelId), ovr = h.joints || {}, out = [];
+  for (let i = 0; i < rooms.length; i++) for (let j = i + 1; j < rooms.length; j++){
+    const A = rooms[i], B = rooms[j];
+    A.pts.forEach((_, wa) => B.pts.forEach((_, wb) => {
+      const jt = facingWalls(A, wa, B, wb); if (!jt) return;
+      const key = jointKey(A.id, wa, B.id, wb);
+      out.push({ ...jt, key, off: !!(ovr[key] && ovr[key].off) });
+    }));
+  }
+  return out;
+}
+// Points du mur A et de son vis-à-vis sur B, à l'abscisse u le long de A
+const jointA = (jt, u) => [jt.a0[0] + jt.ua[0]*u, jt.a0[1] + jt.ua[1]*u];
+function jointB(jt, u){
+  const P = jointA(jt, u), d = dot([P[0]-jt.b0[0], P[1]-jt.b0[1]], jt.nb) / dot(jt.na, jt.nb);
+  return [P[0] - jt.na[0]*d, P[1] - jt.na[1]*d];
+}
+// Ouvertures des deux murs, en abscisses le long de A
+function jointHoles(jt){
+  const holes = [], LA = wallLen(jt.A.pts, jt.wa), sOf = X => dot([X[0]-jt.a0[0], X[1]-jt.a0[1]], jt.ua);
+  (jt.A.items || []).forEach(it => { if (it.kind === 'opening' && it.wall === jt.wa) holes.push([Math.min(it.t0, it.t1)*LA, Math.max(it.t0, it.t1)*LA, 'A']); });
+  (jt.B.items || []).forEach(it => {
+    if (it.kind !== 'opening' || it.wall !== jt.wb) return;
+    const u0 = sOf(wallPoint(jt.B.pts, jt.wb, it.t0)), u1 = sOf(wallPoint(jt.B.pts, jt.wb, it.t1));
+    holes.push([Math.min(u0, u1), Math.max(u0, u1), 'B']);
+  });
+  return holes;
+}
+function jointSegments(jt, holes){
+  let segs = [[jt.s0, jt.s1]];
+  holes.forEach(([h0, h1]) => { segs = segs.flatMap(([a, b]) => h1 <= a || h0 >= b ? [[a, b]] : [[a, Math.min(b, h0)], [Math.max(a, h1), b]].filter(([x, y]) => y - x > 0.02)); });
+  return segs;
+}
+function jointsSVG(h, levelId, T, S, badges){
+  const P = a => T(a).map(v => v.toFixed(1)).join(',');
+  const ln = (a, b, cls) => { const [x1, y1] = T(a), [x2, y2] = T(b); return `<line class="${cls}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`; };
+  const px = 1 / S;
+  let bands = '', cuts = '', marks = '';
+  detectJoints(h, levelId).forEach((jt, k) => {
+    if (jt.off) return;
+    const holes = jointHoles(jt);
+    if (jt.gap > 0.005) jointSegments(jt, holes).forEach(([u0, u1]) => {
+      bands += `<polygon class="joint" points="${[jointA(jt, u0), jointA(jt, u1), jointB(jt, u1), jointB(jt, u0)].map(P).join(' ')}"/>`;
+    });
+    // Une ouverture d'une pièce coupe aussi le mur d'en face
+    holes.forEach(([h0, h1, side]) => {
+      const u0 = Math.max(h0, jt.s0), u1 = Math.min(h1, jt.s1); if (u1 - u0 < 0.05) return;
+      const at = side === 'A' ? u => jointB(jt, u) : u => jointA(jt, u), n = side === 'A' ? jt.nb : jt.na;
+      const Q0 = at(u0), Q1 = at(u1), j = (Q, s) => [Q[0] + n[0]*s*px, Q[1] + n[1]*s*px];
+      cuts += ln(Q0, Q1, 'cut') + ln(j(Q0, -4), j(Q0, 4), 'jamb') + ln(j(Q1, -4), j(Q1, 4), 'jamb');
+    });
+    if (badges){
+      const um = (jt.s0 + jt.s1) / 2, [x, y] = T(jointA(jt, um)), [x2, y2] = T(jointB(jt, um));
+      marks += `<g class="jbadge" transform="translate(${((x + x2)/2).toFixed(1)} ${((y + y2)/2).toFixed(1)})"><circle r="9"/><text dy="3.8">${k + 1}</text></g>`;
+    }
+  });
+  return bands + (cuts ? `<g class="op">${cuts}</g>` : '') + marks;
+}
 function houseLayer(rooms, v, opts){
   const T=([x,y])=>[(x-v.minX)*v.S+v.pad,(y-v.minY)*v.S+v.pad];
   let polys='', labels='', items='';
@@ -734,7 +872,8 @@ function houseLayer(rooms, v, opts){
     labels += `<text x="${lx.toFixed(1)}" y="${(ly-2).toFixed(1)}" text-anchor="middle" class="rn" pointer-events="none">${escapeHtml(r.name)}</text>
                <text x="${lx.toFixed(1)}" y="${(ly+14).toFixed(1)}" text-anchor="middle" class="ra" pointer-events="none">${fmt(area(r.pts),1)} m²</text>`;
   });
-  return polys + `<g pointer-events="none">${items}${labels}</g>`;
+  const jt = opts.house ? jointsSVG(opts.house, opts.level, T, v.S, opts.badges) : '';
+  return polys + `<g pointer-events="none">${jt}${items}${labels}</g>`;
 }
 function houseSVG(rooms, v, opts = {}){
   return `<svg id="${opts.id||''}" viewBox="0 0 ${v.W.toFixed(0)} ${v.H.toFixed(0)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plan du logement">${SVG_STYLE}
@@ -847,7 +986,10 @@ const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.c
 function packHouse(h){
   const lv = h.levels.map(l => l.id), groups = [];
   const grp = sid => { let i = groups.indexOf(sid); if (i < 0){ groups.push(sid); i = groups.length - 1; } return i; };
-  return { v: SHARE_V, n: h.name, l: h.levels.map(l => [l.name, l.order]),
+  const ri = id => h.rooms.findIndex(r => r.id === id);
+  const off = Object.keys(h.joints || {}).filter(k => h.joints[k].off)
+    .map(k => k.split('|').flatMap(x => { const [id, w] = x.split(':'); return [ri(id), +w]; })).filter(a => a[0] >= 0 && a[2] >= 0);
+  return { v: SHARE_V, n: h.name, l: h.levels.map(l => [l.name, l.order]), j: off,
     r: h.rooms.map(r => ({ n: r.name, l: lv.indexOf(r.levelId), h: Math.round((r.height || 0) * MM), g: grp(r.sid),
       p: r.pts.flatMap(([x, y]) => [Math.round(x * MM), Math.round(y * MM)]),
       i: (r.items || []).map(it => it.kind === 'opening'
@@ -873,7 +1015,13 @@ function unpackHouse(o){
     return { id: uid('r'), name: str(r.n) || 'Pièce', pts, height: int(r.h, 0, 10 * MM) / MM,
              sid: sids[g] || (sids[g] = uid('s')), levelId: levels[int(r.l, 0, levels.length - 1)].id, items };
   });
-  return ensureLevels({ id: uid('h'), name: str(o.n) || 'Logement partagé', levels, rooms, date: Date.now() });
+  const joints = {};
+  (Array.isArray(o.j) ? o.j : []).slice(0, SHARE_MAX.rooms).forEach(a => {
+    if (!Array.isArray(a)) return;
+    const A = rooms[int(a[0], 0, rooms.length - 1)], B = rooms[int(a[2], 0, rooms.length - 1)];
+    joints[jointKey(A.id, int(a[1], 0, A.pts.length - 1), B.id, int(a[3], 0, B.pts.length - 1))] = { off: true };
+  });
+  return ensureLevels({ id: uid('h'), name: str(o.n) || 'Logement partagé', levels, rooms, joints, date: Date.now() });
 }
 function unpackItem(a, n, int){
   if (!Array.isArray(a)) return null;
@@ -1054,7 +1202,7 @@ function pageSVG(h, lvl, k, n, lay, date){
   const P = PDF, rooms = levelRooms(h, lvl.id), x1 = P.W - P.m, y1 = P.H - P.m, e = escapeHtml;
   const la = rooms.reduce((t, r) => t + area(r.pts), 0);
   const table = surfaceTable(h, rooms, P.col + 2, 18, 100);
-  const plan = houseLayer(h.rooms, lay.view, { level: lvl.id, dims: true, elec: true, fill: '#fff' });
+  const plan = houseLayer(h.rooms, lay.view, { house: h, level: lvl.id, dims: true, elec: true, fill: '#fff' });
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${P.W} ${P.H}" width="${P.W}" height="${P.H}">${SVG_STYLE}${PAGE_STYLE}
     <rect x="0" y="0" width="${P.W}" height="${P.H}" fill="#fff"/>
     <rect class="pg-frame" x="${P.m}" y="${P.m}" width="${P.W - 2*P.m}" height="${P.H - 2*P.m}"/>
@@ -1233,7 +1381,7 @@ function renderHouse(){
   } else {
     // Même cadrage pour tous les niveaux : les étages se superposent quand on change d'onglet
     const v = arranging ? (aView || (aView = makeView(all, 3))) : makeView(all);
-    const opts = { id:'hsvg', level: lvl.id, ghost: arranging || !rooms.length, dims: $('#dimsChk').checked && !arranging, elec: $('#elecChk').checked, sel: arranging ? movingSet() : null };
+    const opts = { id:'hsvg', house: h, badges: houseEditing && !arranging, level: lvl.id, ghost: arranging || !rooms.length, dims: $('#dimsChk').checked && !arranging, elec: $('#elecChk').checked, sel: arranging ? movingSet() : null };
     plan.innerHTML = houseSVG(all, v, opts);
     plan._view = v; plan._opts = opts;
     if (!rooms.length) plan.insertAdjacentHTML('beforeend', '<div class="emptyplan">Aucune pièce sur ce niveau. Les pointillés montrent les autres niveaux.</div>');
@@ -1258,6 +1406,7 @@ function renderHouse(){
     <span class="area">${fmt(area(r.pts),1)} m²</span></li>`; }).join('')
     : '<li class="empty">Aucune pièce sur ce niveau pour l’instant.</li>';
   $('#houseEditPanel').classList.toggle('hidden', !houseEditing || arranging);
+  if (houseEditing && !arranging) renderJoints();
   $('#sharedPanel').classList.toggle('hidden', !h.shared);
   $('#shareBtn').classList.toggle('hidden', !all.length);
   $('#pdfBtn').classList.toggle('hidden', !all.length);
@@ -1318,6 +1467,40 @@ $('#drawBtn').addEventListener('click', () => {
   h.rooms = h.rooms.concat(r); save();
   openRoom(r); setEditing(true);
   toast('Pièce ajoutée : ajustez ses murs');
+});
+
+/* Murs mitoyens : liste, épaisseur, dissociation */
+function renderJoints(){
+  const js = detectJoints(house, house.curLevel);
+  if (document.activeElement && document.activeElement.matches('#jointList input')) return; // ne pas couper une saisie
+  $('#jointList').innerHTML = js.length ? js.map((jt, k) => `<li class="${jt.off ? 'off' : ''}">
+    <span class="jn">${k + 1}</span>
+    <span class="jt"><b>${escapeHtml(jt.A.name)} ↔ ${escapeHtml(jt.B.name)}</b><span>mur ${jt.wa + 1} / mur ${jt.wb + 1}${jt.off ? ', dissociés' : ''}</span></span>
+    ${jt.off ? '' : `<label class="num-in">Épaisseur <input type="number" min="1" max="${JOINT.maxT}" step="1" inputmode="numeric" data-jt="${jt.key}" value="${Math.max(0, Math.round(jt.gap * 100))}"> cm</label>`}
+    <button class="mini" data-joff="${jt.key}">${jt.off ? 'Réunir' : 'Dissocier'}</button></li>`).join('')
+    : '<li class="empty">Aucun mur mitoyen détecté sur ce niveau. Rapprochez les pièces voisines à moins de 45 cm avec « Ajuster la disposition ».</li>';
+}
+const dropJointOverrides = roomId => {
+  if (!house.joints) return;
+  house.joints = Object.fromEntries(Object.entries(house.joints).filter(([k]) => !k.split('|').some(x => x.startsWith(roomId + ':'))));
+};
+$('#jointList').addEventListener('click', e => {
+  const b = e.target.closest('[data-joff]'); if (!b) return;
+  const key = b.dataset.joff, cur = house.joints || {}, off = !(cur[key] && cur[key].off);
+  house.joints = Object.fromEntries(Object.entries({ ...cur, [key]: off ? { off: true } : null }).filter(([, v]) => v));
+  save(); renderHouse();
+});
+$('#jointList').addEventListener('change', e => {
+  const key = e.target.dataset.jt; if (!key) return;
+  const t = parseFloat(e.target.value) / 100;
+  e.target.blur();
+  if (!(t >= 0.01 && t <= JOINT.maxT / 100)){ toast(`Épaisseur entre 1 et ${JOINT.maxT} cm`); renderHouse(); return; }
+  const jt = detectJoints(house, house.curLevel).find(j => j.key === key); if (!jt) return;
+  // La plus petite pièce glisse perpendiculairement au mur pour obtenir l'épaisseur voulue
+  const moveB = area(jt.B.pts) <= area(jt.A.pts), r = moveB ? jt.B : jt.A, d = t - jt.gap, k = moveB ? -d : d;
+  r.pts = r.pts.map(([x, y]) => [x + jt.na[0]*k, y + jt.na[1]*k]);
+  save(); renderHouse();
+  if (Math.abs(d) >= 0.005) toast(`${r.name} décalée de ${fmt(Math.abs(d) * 100, 0)} cm`);
 });
 
 /* Ajustement de la disposition */
@@ -1399,7 +1582,7 @@ $('#delCorner').addEventListener('click', () => {
   const p = roomRef.pts; if (selCorner == null || p.length <= 3) return;
   snapshot();
   const np = p.filter((_, i) => i !== selCorner);
-  roomRef.items = reprojectItems(p, np, roomRef.items || []); roomRef.pts = np;
+  roomRef.items = reprojectItems(p, np, roomRef.items || []); roomRef.pts = np; dropJointOverrides(roomRef.id);
   selCorner = null; save(); renderRoom();
 });
 $('#addType').innerHTML = '<optgroup label="Ouvertures">' + Object.entries(OPENINGS).map(([k,o]) => `<option value="o:${k}">${o.label}</option>`).join('') + '</optgroup>'
@@ -1410,7 +1593,8 @@ function setPlacing(v){
   $('#roomPlan').classList.toggle('placing', !!v);
   const [kind, type] = (v || ':').split(':');
   $('#placeHint').textContent = !v ? 'Touchez un élément du plan pour le sélectionner.'
-    : kind === 'o' ? `Touchez le mur à l’endroit de la ${OPENINGS[type].label.toLowerCase()}. Elle sera centrée sur ce point.`
+    : kind === 'o' ? (OPENINGS[type].m ? `Touchez le mur à l’endroit du ${OPENINGS[type].label.toLowerCase()}. Il sera centré sur ce point.`
+                                       : `Touchez le mur à l’endroit de la ${OPENINGS[type].label.toLowerCase()}. Elle sera centrée sur ce point.`)
     : DEVICES[type].wall ? 'Touchez le mur à l’endroit de l’appareil.' : 'Touchez l’emplacement dans la pièce.';
 }
 $('#placeBtn').addEventListener('click', () => setPlacing(placing ? null : $('#addType').value));
@@ -1452,6 +1636,18 @@ function snapCorner(p, k, q, f, axis){
   });
   return rotPts([v], -axis)[0];
 }
+const isCeiling = it => it.kind === 'device' && !(DEVICES[it.type] && DEVICES[it.type].wall);
+// Aligne un appareil au plafond sur les autres et sur le centre de la pièce ; renvoie aussi les repères à tracer
+function snapCeiling(p, items, id, q, f){
+  const tol = 8 / f.S, toV = pt => rotPts([pt], f.ang)[0], v = toV(q), guides = [];
+  const refs = items.filter(i => i.id !== id && isCeiling(i) && i.wall < p.length).map(i => devicePos(p, i)).concat([labelPoint(p)]);
+  [0, 1].forEach(ax => {
+    let best = null;
+    refs.forEach(r => { const w = toV(r); if (Math.abs(v[ax] - w[ax]) < tol && (!best || Math.abs(v[ax] - w[ax]) < Math.abs(v[ax] - best[1][ax]))) best = [r, w]; });
+    if (best){ v[ax] = best[1][ax]; guides.push(best[0]); }
+  });
+  return { q: rotPts([v], -f.ang)[0], guides };
+}
 function movedItem(p, it, dx, dy){
   if (it.kind === 'device'){ const q = devicePos(p, it); return anchorDevice(p, it, [q[0]+dx, q[1]+dy]); }
   const A = wallPoint(p, it.wall, it.t0), B = wallPoint(p, it.wall, it.t1);
@@ -1470,7 +1666,7 @@ $('#roomPlan').addEventListener('pointerdown', e => {
   if (t.dataset.mid != null){
     const i = +t.dataset.mid, p = r.pts, a = p[i], b = p[(i+1)%p.length];
     const np = [...p.slice(0, i+1), [(a[0]+b[0])/2, (a[1]+b[1])/2], ...p.slice(i+1)];
-    r.items = reprojectItems(p, np, r.items || []); r.pts = np; corner = i + 1; inserted = true;
+    r.items = reprojectItems(p, np, r.items || []); r.pts = np; corner = i + 1; inserted = true; dropJointOverrides(r.id);
   } else if (t.dataset.corner != null) corner = +t.dataset.corner;
   selCorner = corner; selItem = corner == null ? t.dataset.item : null;
   rdrag = { frame, corner, item: selItem, start: roomToMeters(svg, e), moved: false, changed: inserted,
@@ -1490,7 +1686,15 @@ $('#roomPlan').addEventListener('pointermove', e => {
     np[rdrag.corner] = snapCorner(np, rdrag.corner, [c[0]+dx, c[1]+dy], rdrag.frame, rdrag.axis);
     r.pts = np; r.items = remapItems(rdrag.pts, np, rdrag.items);
   } else {
-    r.items = rdrag.items.map(it => it.id === rdrag.item ? movedItem(rdrag.pts, it, dx, dy) : it);
+    const it0 = rdrag.items.find(i => i.id === rdrag.item);
+    let moved = movedItem(rdrag.pts, it0, dx, dy);
+    rdrag.guides = [];
+    if (isCeiling(it0)){
+      const o = devicePos(rdrag.pts, it0), sn = snapCeiling(rdrag.pts, rdrag.items, it0.id, [o[0]+dx, o[1]+dy], rdrag.frame);
+      if (!inside(sn.q, rdrag.pts)) return; // reste dans la pièce
+      moved = anchorDevice(rdrag.pts, it0, sn.q); rdrag.guides = sn.guides;
+    }
+    r.items = rdrag.items.map(it => it.id === rdrag.item ? moved : it);
   }
   renderRoom();
 });
@@ -1509,10 +1713,11 @@ function renderItems(){
     let info, ctl = '';
     if (it.kind === 'opening'){
       const w = openingWidth(p, it);
-      info = `Mur ${it.wall+1}, ${it.swingOut ? 'ouvre vers l’extérieur' : 'ouvre vers l’intérieur'}`;
+      const open = (OPENINGS[it.type] || {}).open;
+      info = open ? `Mur ${it.wall+1}, sans porte` : `Mur ${it.wall+1}, ${it.swingOut ? 'ouvre vers l’extérieur' : 'ouvre vers l’intérieur'}`;
       ctl += `<label class="num-in">Largeur <input type="number" step="0.01" min="0.3" inputmode="decimal" data-w="${it.id}" value="${w.toFixed(2)}"> m</label>`;
-      ctl += `<button class="mini" data-flip="${it.id}">Inverser l’ouverture</button>`;
-      if (hasHinge(it.type, w)) ctl += `<button class="mini" data-hinge="${it.id}">${it.type === 'coulissante' ? 'Inverser le coulissement' : 'Inverser les gonds'}</button>`;
+      if (!open) ctl += `<button class="mini" data-flip="${it.id}">Inverser l’ouverture</button>`;
+      if (!open && hasHinge(it.type, w)) ctl += `<button class="mini" data-hinge="${it.id}">${it.type === 'coulissante' ? 'Inverser le coulissement' : 'Inverser les gonds'}</button>`;
     } else {
       const def = DEVICES[it.type] || {};
       info = def.wall ? `Mur ${it.wall+1}` : 'Au plafond';
@@ -1549,7 +1754,8 @@ $('#itemList').addEventListener('change', e => {
 });
 function renderRoom(){
   const r = roomRef, p = r.pts, h = r.height || 0, A = area(p), P = perimeter(p);
-  const out = roomSVG(r, { sel: selItem, edit: editing, selCorner, frame: rdrag ? rdrag.frame : null });
+  const out = roomSVG(r, { sel: selItem, edit: editing, selCorner, frame: rdrag ? rdrag.frame : null,
+                            measure: editing ? selItem : null, guides: rdrag && rdrag.guides });
   $('#roomPlan').innerHTML = out.svg; $('#roomPlan')._tf = out.tf;
   $('#roomPlan').classList.toggle('editing', editing);
   $('#editPanel').classList.toggle('hidden', !editing);
