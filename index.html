@@ -233,6 +233,10 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 <main id="house" class="wrap hidden">
   <button class="back" id="houseBack">Mes logements</button>
   <input class="name" id="houseName" aria-label="Nom du logement">
+  <div class="arrange hidden" id="sharedPanel" style="margin:0 0 14px">
+    <p>Logement reçu par lien : vous le consultez sans l’enregistrer.</p>
+    <button class="btn btn-main" id="importBtn">Importer dans mes logements</button>
+  </div>
   <div class="levels" id="levelTabs" role="tablist" aria-label="Niveaux"></div>
   <div class="levelbar">
     <input id="levelName" aria-label="Nom du niveau">
@@ -263,6 +267,7 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
   </div>
   <div class="stats" id="houseStats"></div>
   <p class="status" id="houseStatus"></p>
+  <div class="row"><button class="btn btn-ghost" id="shareBtn">Partager par lien</button></div>
   <h2>Pièces</h2>
   <ul class="list" id="roomList"></ul>
   <div class="row" style="justify-content:space-between">
@@ -815,6 +820,109 @@ function addSessionRooms(h, list){
   return separate;
 }
 
+/* ---------- Partage par lien ---------- */
+// Le logement voyage compressé dans le fragment (#s=…) : il n'est jamais envoyé à un serveur
+const SHARE_V = 1, SHARE_KEY = 's', MM = 1000, TT = 10000;
+const SHARE_MAX = { hash: 100000, json: 2000000, levels: 50, rooms: 500, pts: 200, items: 500, name: 80 };
+const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
+// Format compact : coordonnées en millimètres, positions sur les murs en dix-millièmes, sans identifiants
+function packHouse(h){
+  const lv = h.levels.map(l => l.id), groups = [];
+  const grp = sid => { let i = groups.indexOf(sid); if (i < 0){ groups.push(sid); i = groups.length - 1; } return i; };
+  return { v: SHARE_V, n: h.name, l: h.levels.map(l => [l.name, l.order]),
+    r: h.rooms.map(r => ({ n: r.name, l: lv.indexOf(r.levelId), h: Math.round((r.height || 0) * MM), g: grp(r.sid),
+      p: r.pts.flatMap(([x, y]) => [Math.round(x * MM), Math.round(y * MM)]),
+      i: (r.items || []).map(it => it.kind === 'opening'
+        ? ['o', it.type, it.wall, Math.round(it.t0 * TT), Math.round(it.t1 * TT), (it.swingOut ? 1 : 0) | (it.hingeEnd ? 2 : 0)]
+        : ['d', it.type, it.wall, Math.round(it.t * TT), Math.round((it.d || 0) * MM), it.h == null ? null : Math.round(it.h * MM)]) })) };
+}
+// Données venues d'un lien : tout est vérifié, rien n'est repris tel quel
+function unpackHouse(o){
+  const int = (v, min, max) => { if (!Number.isInteger(v) || v < min || v > max) throw new Error('valeur invalide'); return v; };
+  const str = v => typeof v === 'string' ? v.slice(0, SHARE_MAX.name) : '';
+  if (!o || o.v !== SHARE_V || !Array.isArray(o.l) || !Array.isArray(o.r) || !o.l.length) throw new Error('format inconnu');
+  const levels = o.l.slice(0, SHARE_MAX.levels).map(a => {
+    const order = int(Array.isArray(a) ? a[1] : NaN, -20, 50);
+    return { id: uid('l'), name: str(a[0]) || levelLabel(order), order };
+  });
+  const sids = [];
+  const rooms = o.r.slice(0, SHARE_MAX.rooms).map(r => {
+    const p = Array.isArray(r && r.p) ? r.p.slice(0, SHARE_MAX.pts * 2) : [], pts = [];
+    for (let k = 0; k + 1 < p.length; k += 2) pts.push([int(p[k], -1e7, 1e7) / MM, int(p[k+1], -1e7, 1e7) / MM]);
+    if (pts.length < 3) throw new Error('pièce invalide');
+    const g = int(r.g, 0, SHARE_MAX.rooms);
+    const items = (Array.isArray(r.i) ? r.i : []).slice(0, SHARE_MAX.items).map(a => unpackItem(a, pts.length, int)).filter(Boolean);
+    return { id: uid('r'), name: str(r.n) || 'Pièce', pts, height: int(r.h, 0, 10 * MM) / MM,
+             sid: sids[g] || (sids[g] = uid('s')), levelId: levels[int(r.l, 0, levels.length - 1)].id, items };
+  });
+  return ensureLevels({ id: uid('h'), name: str(o.n) || 'Logement partagé', levels, rooms, date: Date.now() });
+}
+function unpackItem(a, n, int){
+  if (!Array.isArray(a)) return null;
+  const [k, type] = a;
+  if (k === 'o' && own(OPENINGS, type)){
+    const f = int(a[5], 0, 3);
+    return { id: uid('i'), kind: 'opening', type, wall: int(a[2], 0, n - 1), t0: int(a[3], 0, TT) / TT, t1: int(a[4], 0, TT) / TT, swingOut: !!(f & 1), hingeEnd: !!(f & 2) };
+  }
+  if (k === 'd' && own(DEVICES, type))
+    return { id: uid('i'), kind: 'device', type, wall: int(a[2], 0, n - 1), t: int(a[3], 0, TT) / TT, d: int(a[4], 0, 100 * MM) / MM,
+             h: a[5] == null ? null : int(a[5], 0, 100 * MM) / MM };
+  return null; // type inconnu (version plus récente) : ignoré
+}
+const b64u = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+// zlib (« deflate ») : compact, et sa somme de contrôle détecte un lien tronqué
+async function deflate(text){
+  return new Uint8Array(await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer());
+}
+async function inflate(bytes){
+  const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate')).getReader(), parts = [];
+  let size = 0;
+  for (;;){
+    const { done, value } = await reader.read(); if (done) break;
+    size += value.length;
+    if (size > SHARE_MAX.json){ await reader.cancel(); throw new Error('données trop volumineuses'); }
+    parts.push(value);
+  }
+  return new TextDecoder().decode(await new Blob(parts).arrayBuffer());
+}
+async function shareLink(h){
+  const url = new URL(location.href); url.search = '';
+  url.hash = SHARE_KEY + '=' + b64u(await deflate(JSON.stringify(packHouse(h))));
+  return url.href;
+}
+async function openSharedLink(){
+  const m = location.hash.match(new RegExp('^#' + SHARE_KEY + '=([A-Za-z0-9_-]+)$'));
+  if (!m) return;
+  try {
+    if (m[1].length > SHARE_MAX.hash) throw new Error('lien trop long');
+    const h = unpackHouse(JSON.parse(await inflate(unb64u(m[1]))));
+    openHouse({ ...h, demo: true, shared: true });
+  } catch (e){
+    console.error('Lien de partage illisible', e);
+    toast('Ce lien de partage est invalide ou incomplet');
+  }
+}
+const clearShareHash = () => history.replaceState(null, '', location.pathname + location.search);
+$('#importBtn').addEventListener('click', () => {
+  const { demo, shared, ...rest } = house;
+  const h = ensureLevels({ ...rest, id: uid('h'), date: Date.now() });
+  houses.unshift(h); persist(); clearShareHash();
+  openHouse(h); toast('Logement importé');
+});
+$('#shareBtn').addEventListener('click', async () => {
+  let url;
+  try { url = await shareLink(house); }
+  catch (e){ console.error(e); toast('Partage impossible dans ce navigateur'); return; }
+  if (navigator.share){
+    try { await navigator.share({ title: house.name, text: `Plan de « ${house.name} » (Home mapper)`, url }); return; }
+    catch (e){ if (e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(url); toast('Lien copié dans le presse-papiers'); }
+  catch (e){ prompt('Copiez ce lien :', url); }
+});
+
 /* ---------- Navigation ---------- */
 function show(id){
   ['#home','#house','#room'].forEach(s => $(s).classList.toggle('hidden', s !== id));
@@ -847,7 +955,7 @@ function goEditor(){
   renderHouse(); show('#house');
 }
 function goScan(){
-  if (house.demo){ toast('Le logement d’exemple ne peut pas être relevé : créez un logement'); return; }
+  if (house.demo){ toast(house.shared ? 'Importez ce logement pour y relever des pièces' : 'Le logement d’exemple ne peut pas être relevé : créez un logement'); return; }
   if (!arSupported){ toast(arMessage || 'Réalité augmentée indisponible sur cet appareil'); return; }
   if (!visible('#house')) goPlan();
   startAR();
@@ -955,7 +1063,10 @@ function renderHouse(){
     <span class="area">${fmt(area(r.pts),1)} m²</span></li>`; }).join('')
     : '<li class="empty">Aucune pièce sur ce niveau pour l’instant.</li>';
   $('#houseEditPanel').classList.toggle('hidden', !houseEditing || arranging);
-  $('#houseStatus').textContent = h.demo ? 'Logement d’exemple : changez de niveau, ouvrez une pièce ou essayez les outils de l’Éditeur.'
+  $('#sharedPanel').classList.toggle('hidden', !h.shared);
+  $('#shareBtn').classList.toggle('hidden', !all.length);
+  $('#houseStatus').textContent = h.shared ? 'Les modifications faites ici sont conservées si vous importez le logement.'
+    : h.demo ? 'Logement d’exemple : changez de niveau, ouvrez une pièce ou essayez les outils de l’Éditeur.'
     : arSupported ? `« Relevé RA » relève le niveau affiché (${lvl.name.toLowerCase()}). Si vous changez d’étage pendant le relevé, les pièces sont rangées au bon niveau automatiquement.`
     : arMessage + ' Vous pouvez dessiner les pièces dans l’Éditeur.';
   $('#houseStatus').classList.toggle('warn', !h.demo && !arSupported);
@@ -1735,6 +1846,8 @@ const hv = makeView(SAMPLE_ROOMS);
 $('#heroPlan').innerHTML = houseSVG(SAMPLE_ROOMS, hv, {});
 renderHome();
 renderNav();
+openSharedLink();
+window.addEventListener('hashchange', openSharedLink);
 checkSupport();
 })();
 </script>
