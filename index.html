@@ -93,8 +93,24 @@ h2{font-size:24px;font-weight:600;margin:32px 0 8px}
 .walls{list-style:none;padding:0;margin:8px 0 0;columns:2;column-gap:24px;font-size:15px}
 .walls li{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dotted var(--line);break-inside:avoid}
 .walls li b{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:17px}
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:999px;font-weight:500;z-index:30;transition:opacity .2s;max-width:90vw;text-align:center}
+/* Barre de navigation : en bas sur mobile, rail à droite sur grand écran */
+body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
+:root{--nav-h:72px;--nav-w:96px}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;gap:4px;background:var(--sheet);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+.nav button{flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:0;border-radius:14px;color:var(--ink-soft);font:600 13px/1.1 Barlow,sans-serif;min-height:58px;padding:6px 2px}
+.nav svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav button[aria-current="page"]{color:var(--laser);background:var(--fill)}
+.nav button.off{opacity:.45}
+.nav button:disabled{opacity:.3;cursor:not-allowed}
+#overlay:not(.hidden) ~ .nav{display:none}
+@media (min-width:900px){
+  body{padding-bottom:0;padding-right:var(--nav-w)}
+  .nav{left:auto;top:0;width:var(--nav-w);flex-direction:column;justify-content:flex-start;gap:8px;border-top:0;border-left:1px solid var(--line);padding:calc(24px + env(safe-area-inset-top,0px)) 8px 24px}
+  .nav button{flex:none;min-height:72px}
+}
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:999px;font-weight:500;z-index:30;transition:opacity .2s;max-width:90vw;text-align:center}
 
+@media (min-width:900px){ .toast{bottom:calc(24px + env(safe-area-inset-bottom,0px));margin-left:calc(var(--nav-w) / -2)} }
 /* Overlay AR */
 #overlay{position:fixed;inset:0;z-index:10;color:#fff;font-family:Barlow,system-ui,sans-serif;pointer-events:none}
 #overlay .hud{position:absolute;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:center;gap:8px}
@@ -155,6 +171,18 @@ h2{font-size:24px;font-weight:600;margin:32px 0 8px}
 .num-in{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ink-soft)}
 .num-in input{width:76px;font:600 17px "Barlow Condensed",sans-serif;padding:5px 8px;border:1.5px solid var(--line);border-radius:6px;background:var(--sheet);color:var(--ink)}
 .mini.danger{color:var(--laser)}
+.mini:disabled{opacity:.4;cursor:not-allowed}
+/* Éditeur de plan */
+.sheet.editing svg{touch-action:none}
+.edit .vtx circle{fill:var(--sheet);stroke:var(--laser);stroke-width:2.5}
+.edit .vtx .vhit{fill:transparent;stroke:none}
+.edit .vtx.sel circle:not(.vhit){fill:var(--laser)}
+.edit .mid circle{fill:var(--sheet);stroke:var(--ink-soft);stroke-width:1.5}
+.edit .mid path{stroke:var(--ink-soft);stroke-width:1.8}
+.edit .vtx,.edit .mid,.sheet.editing [data-item]{cursor:grab}
+.dev .dhit{fill:transparent;stroke:none}
+.dim[data-wall]{cursor:pointer}
+.walls .num-in input{width:70px}
 /* Outils RA */
 #tools{position:absolute;left:0;right:0;bottom:calc(150px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:auto}
 .modes{display:flex;background:rgba(10,16,22,.75);border-radius:999px;padding:4px;gap:2px}
@@ -215,9 +243,15 @@ h2{font-size:24px;font-weight:600;margin:32px 0 8px}
   <div class="toolbar" id="houseTools">
     <label class="chk"><input type="checkbox" id="dimsChk"> Cotes</label>
     <label class="chk"><input type="checkbox" id="elecChk" checked> Électricité</label>
-    <button class="btn btn-ghost" id="arrangeBtn">Ajuster la disposition</button>
   </div>
   <div class="legend" id="legend"></div>
+  <div class="arrange hidden" id="houseEditPanel">
+    <p>Touchez une pièce du plan ou de la liste pour modifier ses murs, ses cotes, ses ouvertures et son électricité.</p>
+    <div class="row" style="margin-top:0">
+      <button class="btn btn-ghost" id="drawBtn">Dessiner une pièce</button>
+      <button class="btn btn-ghost" id="arrangeBtn">Ajuster la disposition</button>
+    </div>
+  </div>
   <div class="arrange hidden" id="arrangePanel">
     <p id="arrangeHint">Touchez une pièce puis faites-la glisser pour la déplacer. Les pointillés montrent les autres niveaux, pour aligner les escaliers.</p>
     <div class="rot">
@@ -228,9 +262,6 @@ h2{font-size:24px;font-weight:600;margin:32px 0 8px}
     <button class="btn btn-main" id="arrangeDone">Terminer l’ajustement</button>
   </div>
   <div class="stats" id="houseStats"></div>
-  <div class="row" style="margin-top:20px">
-    <button class="btn btn-main" id="scanBtn">Relever des pièces</button>
-  </div>
   <p class="status" id="houseStatus"></p>
   <h2>Pièces</h2>
   <ul class="list" id="roomList"></ul>
@@ -245,6 +276,15 @@ h2{font-size:24px;font-weight:600;margin:32px 0 8px}
   <button class="back" id="roomBack">Retour au logement</button>
   <input class="name" id="roomName" aria-label="Nom de la pièce">
   <div class="sheet" id="roomPlan"></div>
+  <div class="toolbar">
+    <button class="btn btn-ghost" id="editBtn">Modifier le plan</button>
+    <button class="mini" id="undoEdit" disabled>Annuler la dernière modification</button>
+  </div>
+  <div class="arrange hidden" id="editPanel">
+    <p id="editHint"></p>
+    <div class="rot"><button id="delCorner">Supprimer le coin</button></div>
+    <button class="btn btn-main" id="editDone" style="margin-top:10px">Terminer les modifications</button>
+  </div>
   <div class="addbar">
     <select id="addType" aria-label="Élément à ajouter"></select>
     <button class="btn btn-ghost" id="placeBtn">Placer sur le plan</button>
@@ -258,6 +298,7 @@ h2{font-size:24px;font-weight:600;margin:32px 0 8px}
     <input type="number" id="heightIn" step="0.01" min="1" max="10" inputmode="decimal"> m
   </label>
   <h2>Longueur des murs</h2>
+  <p class="status" style="margin-top:0">Changez une cote pour corriger un mur : il s’allonge depuis son premier coin, et le mur parallèle suivant compense.</p>
   <ul class="walls" id="walls"></ul>
   <div class="row" style="margin-top:22px">
     <button class="btn btn-ghost" id="copyBtn">Copier les mesures</button>
@@ -296,6 +337,14 @@ h2{font-size:24px;font-weight:600;margin:32px 0 8px}
     <button class="link" id="reopenBtn">Continuer cette pièce</button>
   </div>
 </div>
+
+<!-- NAVIGATION : en bas sur mobile, à droite sur grand écran -->
+<nav class="nav" id="nav" aria-label="Modes">
+  <button data-nav="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Logements</button>
+  <button data-nav="plan"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 12h8v9M11 3v5M15 12h6"/></svg>Plan</button>
+  <button data-nav="edit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Éditeur</button>
+  <button data-nav="scan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/><circle cx="12" cy="12" r="3"/></svg>Relevé RA</button>
+</nav>
 
 <div class="toast hidden" id="toast"></div>
 
@@ -436,6 +485,62 @@ function leafCount(type, w){
 }
 const hasHinge = (type, w) => leafCount(type, w) === 1;
 
+/* Édition : positions des éléments et retouches de la géométrie */
+// Ouverture de largeur w centrée sur le point du mur le plus proche de q
+function openingAt(p, q, w, dir = 1){
+  const i = nearestWall(p, q), L = wallLen(p, i) || 1, ww = Math.min(w, L * 0.95), tc = projT(p, i, q);
+  let t0 = tc - ww/2/L, t1 = tc + ww/2/L;
+  if (t0 < 0){ t1 -= t0; t0 = 0; } if (t1 > 1){ t0 -= t1 - 1; t1 = 1; }
+  return dir > 0 ? { wall: i, t0, t1 } : { wall: i, t0: t1, t1: t0 };
+}
+// Appareil ramené au point q : contre le mur le plus proche, ou au plafond à sa distance du mur
+function anchorDevice(p, it, q){
+  const i = nearestWall(p, q), t = projT(p, i, q);
+  if (DEVICES[it.type] && DEVICES[it.type].wall) return { ...it, wall: i, t };
+  const F = wallPoint(p, i, t), n = inwardNormal(p, i);
+  return { ...it, wall: i, t, d: Math.max(0.05, (q[0]-F[0])*n[0] + (q[1]-F[1])*n[1]) };
+}
+// Même murs, géométrie modifiée : les éléments muraux gardent leur distance au coin le plus proche
+function remapItems(oldP, newP, items){
+  return items.map(it => {
+    if (!(it.wall < newP.length)) return it;
+    const L0 = wallLen(oldP, it.wall), L1 = wallLen(newP, it.wall) || 1;
+    const keep = (a, c) => c <= 0.5 ? a : L1 - (L0 - a); // a : position en mètres depuis le début du mur
+    if (it.kind === 'opening'){
+      const lo = Math.min(it.t0, it.t1) * L0, w = Math.min(Math.abs(it.t1 - it.t0) * L0, L1);
+      let s = keep(lo, (it.t0 + it.t1) / 2); s = Math.max(0, Math.min(s, L1 - w));
+      const a = s / L1, b = (s + w) / L1;
+      return it.t1 >= it.t0 ? { ...it, t0: a, t1: b } : { ...it, t0: b, t1: a };
+    }
+    if (!(DEVICES[it.type] && DEVICES[it.type].wall)) return it; // plafond : position relative conservée
+    return { ...it, t: Math.max(0, Math.min(1, keep(it.t * L0, it.t) / L1)) };
+  });
+}
+// Murs ajoutés ou retirés : chaque élément est reprojeté sur le mur le plus proche
+function reprojectItems(oldP, newP, items){
+  return items.map(it => {
+    if (!(it.wall < oldP.length)) return it;
+    if (it.kind === 'opening'){
+      const A = wallPoint(oldP, it.wall, it.t0), B = wallPoint(oldP, it.wall, it.t1);
+      const i = nearestWall(newP, [(A[0]+B[0])/2, (A[1]+B[1])/2]);
+      return { ...it, wall: i, t0: projT(newP, i, A), t1: projT(newP, i, B) };
+    }
+    return anchorDevice(newP, it, devicePos(oldP, it));
+  });
+}
+// Nouvelle longueur du mur i : son coin d'arrivée et les suivants glissent jusqu'au premier mur parallèle, qui compense
+function setWallLength(p, i, L){
+  const n = p.length, a = p[i], b = p[(i+1)%n], cur = dist(a, b);
+  if (cur < 1e-6) return p;
+  const u = [(b[0]-a[0])/cur, (b[1]-a[1])/cur], dl = L - cur;
+  let moved = [(i+1)%n];
+  for (let k = 1; k < n; k++){
+    const j = (i+k)%n, c = p[j], d = p[(j+1)%n], l = dist(c, d) || 1;
+    if (Math.abs(((d[0]-c[0])*u[1] - (d[1]-c[1])*u[0]) / l) < 0.17){ moved = Array.from({ length: k }, (_, m) => (i+1+m)%n); break; }
+  }
+  return p.map((q, j) => moved.includes(j) ? [q[0] + u[0]*dl, q[1] + u[1]*dl] : q.slice());
+}
+
 // Symboles électriques (conventions des plans français), dessinés le mur en haut, la pièce vers le bas
 function symbol(type, th = 0){
   const tx = (y, s) => `<text x="0" y="${y}" transform="rotate(${(-th).toFixed(1)} 0 ${y-2.5})">${s}</text>`;
@@ -460,12 +565,13 @@ function deviceIcon(type){
     ? `<svg class="icon" viewBox="-14 -3 28 26" aria-hidden="true"><line class="w" x1="-14" y1="0" x2="14" y2="0"/><g class="dev">${symbol(type)}</g></svg>`
     : `<svg class="icon" viewBox="-11 -11 22 22" aria-hidden="true"><g class="dev">${symbol(type)}</g></svg>`;
 }
-function deviceSVG(p, it, T, k = 1, sel = false){
+function deviceSVG(p, it, T, k = 1, sel = false, hit = false){
   if (!(it.wall < p.length)) return '';
   const def = DEVICES[it.type] || {}, [X, Y] = T(devicePos(p, it));
   let th = 0;
   if (def.wall){ const n = inwardNormal(p, it.wall); th = Math.atan2(-n[0], n[1]) * 180 / Math.PI; }
-  return `<g class="dev${sel ? ' sel' : ''}" data-item="${it.id}" transform="translate(${X.toFixed(1)} ${Y.toFixed(1)}) rotate(${th.toFixed(1)}) scale(${k})">${symbol(it.type, th)}</g>`;
+  const h = hit ? `<circle class="dhit" cy="${def.wall ? 9 : 0}" r="12"/>` : '';
+  return `<g class="dev${sel ? ' sel' : ''}" data-item="${it.id}" transform="translate(${X.toFixed(1)} ${Y.toFixed(1)}) rotate(${th.toFixed(1)}) scale(${k})">${h}${symbol(it.type, th)}</g>`;
 }
 // Portes et fenêtres : coupure du mur + vantaux et débattements
 function openingSVG(p, it, T, S, sel = false, hit = false){
@@ -516,7 +622,7 @@ function itemsSVG(p, items, T, S, o = {}){
   if (!items || !items.length) return '';
   let s = '';
   items.forEach(it => { if (it.kind === 'opening') s += openingSVG(p, it, T, S, o.sel === it.id, o.hit); });
-  if (o.elec !== false) items.forEach(it => { if (it.kind === 'device') s += deviceSVG(p, it, T, o.k || 1, o.sel === it.id); });
+  if (o.elec !== false) items.forEach(it => { if (it.kind === 'device') s += deviceSVG(p, it, T, o.k || 1, o.sel === it.id, o.hit); });
   return s;
 }
 function openingIcon(it){
@@ -527,11 +633,30 @@ const itemIcon = it => it.kind === 'opening' ? openingIcon(it) : deviceIcon(it.t
 const itemLabel = it => ((it.kind === 'opening' ? OPENINGS : DEVICES)[it.type] || {}).label || it.type;
 
 /* Plan d'une pièce seule (orientée sur son mur le plus long) */
+// o.ang fige l'orientation, o.frame tout le cadrage (pendant un glisser en édition)
+function roomFrame(raw, ang, pad){
+  const [x0,y0,x1,y1] = bbox([rotPts(raw, ang)]);
+  const w=Math.max(x1-x0,.5), h=Math.max(y1-y0,.5), S=320/Math.max(w,h);
+  return { ang, x0, y0, S, pad, W: w*S+pad*2, H: h*S+pad*2 };
+}
+function editHandles(p, pts, selCorner){
+  const n = pts.length;
+  const mids = pts.map((a, i) => {
+    if (wallLen(p, i) < 0.4) return '';
+    const b = pts[(i+1)%n], nn = inwardNormal(p, i);
+    const mx = ((a[0]+b[0])/2 + nn[0]*MID_INSET).toFixed(1), my = ((a[1]+b[1])/2 + nn[1]*MID_INSET).toFixed(1);
+    return `<g class="mid" data-mid="${i}" transform="translate(${mx} ${my})"><circle r="8"/><path d="M-4 0H4M0 -4V4"/></g>`;
+  }).join('');
+  const vtx = pts.map(([x,y], i) => `<g class="vtx${selCorner === i ? ' sel' : ''}" data-corner="${i}"><circle class="vhit" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="18"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7"/></g>`).join('');
+  // Les « + » passent sous les éléments (qui restent saisissables), les coins au-dessus de tout
+  return { mids: `<g class="edit">${mids}</g>`, vtx: `<g class="edit">${vtx}</g>` };
+}
+const MID_INSET = 34; // décalage des « + » vers l'intérieur, au-delà des symboles muraux
 function roomSVG(room, o = {}){
-  const raw = room.pts, ang = -longestAngle(raw), p = rotPts(raw, ang);
-  const [x0,y0,x1,y1] = bbox([p]);
-  const w=Math.max(x1-x0,.5), h=Math.max(y1-y0,.5), S=320/Math.max(w,h), pad=46;
-  const W=w*S+pad*2, H=h*S+pad*2, T=([x,y])=>[(x-x0)*S+pad,(y-y0)*S+pad];
+  const raw = room.pts;
+  const f = o.frame || roomFrame(raw, o.ang != null ? o.ang : -longestAngle(raw), o.edit ? 60 : 46);
+  const { ang, x0, y0, S, pad, W, H } = f, p = rotPts(raw, ang);
+  const T=([x,y])=>[(x-x0)*S+pad,(y-y0)*S+pad];
   const pts=p.map(T), poly=pts.map(q=>q.map(v=>v.toFixed(1)).join(',')).join(' ');
   let lab='';
   p.forEach((a,i)=>{
@@ -541,15 +666,18 @@ function roomSVG(room, o = {}){
     const [X,Y]=T([mx,my]); let an=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;
     if(an>90) an-=180; if(an<-90) an+=180;
     const lx=(X+nx*18).toFixed(1), ly=(Y+ny*18).toFixed(1);
-    lab+=`<text x="${lx}" y="${ly}" transform="rotate(${an.toFixed(1)} ${lx} ${ly})" text-anchor="middle" dominant-baseline="middle" class="dim" style="font-size:15px">${fmt(L)} <tspan style="font-size:10px;fill:var(--ink-soft)">mur ${i+1}</tspan></text>`;
+    lab+=`<text x="${lx}" y="${ly}" transform="rotate(${an.toFixed(1)} ${lx} ${ly})" text-anchor="middle" dominant-baseline="middle" class="dim" data-wall="${i}" style="font-size:15px">${fmt(L)} <tspan style="font-size:10px;fill:var(--ink-soft)">mur ${i+1}</tspan></text>`;
   });
+  const hd = o.edit ? editHandles(p, pts, o.selCorner) : { mids: '', vtx: '' };
+  const corners = o.edit ? '' : `<g class="corners">${pts.map(([x,y])=>`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5"/>`).join('')}</g>`;
   const svg = `<svg viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plan de la pièce">${SVG_STYLE}
-    ${gridLines(x0-pad/S, y0-pad/S, x1+pad/S, y1+pad/S, S, 0, W, H)}
+    ${gridLines(x0-pad/S, y0-pad/S, x0+(W-pad)/S, y0+(H-pad)/S, S, 0, W, H)}
     <polygon class="room" style="fill:var(--fill)" points="${poly}"/>
-    <g class="corners">${pts.map(([x,y])=>`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5"/>`).join('')}</g>
+    ${corners}${hd.mids}
     ${itemsSVG(p, room.items, T, S, { sel: o.sel, k: 1.3, hit: true })}${lab}
+    ${hd.vtx}
     <g class="scale"><line x1="${pad}" y1="${H-14}" x2="${pad+S}" y2="${H-14}"/><text x="${pad+S+6}" y="${H-14}" dominant-baseline="middle">1 m</text></g></svg>`;
-  return { svg, tf: { ang, x0, y0, S, pad } };
+  return { svg, tf: f };
 }
 
 /* Plan du logement */
@@ -691,7 +819,47 @@ function addSessionRooms(h, list){
 function show(id){
   ['#home','#house','#room'].forEach(s => $(s).classList.toggle('hidden', s !== id));
   window.scrollTo(0,0);
+  renderNav();
 }
+const visible = id => !$(id).classList.contains('hidden');
+// Mode courant : la liste, le plan (logement ou pièce consultée) ou l'éditeur
+function navMode(){
+  if (visible('#house')) return houseEditing || arranging ? 'edit' : 'plan';
+  if (visible('#room')) return editing ? 'edit' : 'plan';
+  return 'home';
+}
+function renderNav(){
+  const m = navMode();
+  $('#nav').querySelectorAll('[data-nav]').forEach(b => {
+    const k = b.dataset.nav;
+    if (k === m) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    b.disabled = k !== 'home' && !house;
+  });
+  $('#nav [data-nav="scan"]').classList.toggle('off', !house || house.demo || !arSupported);
+}
+function goPlan(){
+  houseEditing = false; arranging = false; selIdx = null; aView = null; editing = false;
+  renderHouse(); show('#house');
+}
+function goEditor(){
+  if (visible('#room')){ if (!editing) setEditing(true); return; }
+  houseEditing = true; arranging = false; selIdx = null; aView = null;
+  renderHouse(); show('#house');
+}
+function goScan(){
+  if (house.demo){ toast('Le logement d’exemple ne peut pas être relevé : créez un logement'); return; }
+  if (!arSupported){ toast(arMessage || 'Réalité augmentée indisponible sur cet appareil'); return; }
+  if (!visible('#house')) goPlan();
+  startAR();
+}
+$('#nav').addEventListener('click', e => {
+  const b = e.target.closest('[data-nav]'); if (!b || b.disabled) return;
+  const k = b.dataset.nav;
+  if (k === 'home'){ renderHome(); show('#home'); }
+  else if (k === 'plan') goPlan();
+  else if (k === 'edit') goEditor();
+  else if (k === 'scan') goScan();
+});
 
 /* Accueil */
 function renderHome(){
@@ -705,7 +873,7 @@ function renderHome(){
 }
 $('#houseList').addEventListener('click', e => {
   const o = e.target.closest('[data-h]'), d = e.target.closest('[data-delh]');
-  if (d){ if (!confirm('Supprimer ce logement et toutes ses pièces ?')) return; houses = houses.filter(h => h.id !== d.dataset.delh); persist(); renderHome(); return; }
+  if (d){ if (!confirm('Supprimer ce logement et toutes ses pièces ?')) return; houses = houses.filter(h => h.id !== d.dataset.delh); if (house && house.id === d.dataset.delh) house = null; persist(); renderHome(); renderNav(); return; }
   if (o){ const h = houses.find(h => h.id === o.dataset.h); if (h) openHouse(h); }
 });
 $('#newHouseBtn').addEventListener('click', () => {
@@ -744,8 +912,8 @@ function renderDraft(){
 }
 
 /* Logement */
-let arranging = false, selIdx = null, aView = null, drag = null;
-function openHouse(h){ house = ensureLevels(h); arranging = false; selIdx = null; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); }
+let arranging = false, selIdx = null, aView = null, drag = null, houseEditing = false;
+function openHouse(h){ house = ensureLevels(h); arranging = false; houseEditing = false; selIdx = null; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); }
 function renderHouse(){
   const h = ensureLevels(house), all = h.rooms, lvl = curLevel(h);
   const rooms = levelRooms(h);
@@ -758,7 +926,7 @@ function renderHouse(){
   const plan = $('#housePlan');
   plan.classList.toggle('arranging', arranging);
   if (!all.length){
-    plan.innerHTML = '<div class="emptyplan">Aucune pièce relevée. Lancez un relevé pour commencer le plan.</div>';
+    plan.innerHTML = '<div class="emptyplan">Aucune pièce relevée. Lancez un relevé ou dessinez une pièce pour commencer le plan.</div>';
   } else {
     // Même cadrage pour tous les niveaux : les étages se superposent quand on change d'onglet
     const v = arranging ? (aView || (aView = makeView(all, 3))) : makeView(all);
@@ -786,12 +954,14 @@ function renderHouse(){
     <button class="open" data-r="${i}"><b>${escapeHtml(r.name)}</b><span>${r.pts.length} murs${(r.items||[]).length ? ', ' + r.items.length + ' élément' + (r.items.length>1?'s':'') : ''}, hauteur ${fmt(r.height||0)} m</span></button>
     <span class="area">${fmt(area(r.pts),1)} m²</span></li>`; }).join('')
     : '<li class="empty">Aucune pièce sur ce niveau pour l’instant.</li>';
-  $('#scanBtn').textContent = rooms.length ? `Relever d’autres pièces (${lvl.name.toLowerCase()})` : `Relever ce niveau (${lvl.name.toLowerCase()})`;
-  $('#scanBtn').disabled = !arSupported || h.demo;
-  $('#houseStatus').textContent = h.demo ? 'Logement d’exemple : changez de niveau, essayez « Ajuster la disposition » ou ouvrez une pièce.' : (arSupported ? 'Si vous changez d’étage pendant le relevé, les pièces sont rangées au bon niveau automatiquement.' : arMessage);
+  $('#houseEditPanel').classList.toggle('hidden', !houseEditing || arranging);
+  $('#houseStatus').textContent = h.demo ? 'Logement d’exemple : changez de niveau, ouvrez une pièce ou essayez les outils de l’Éditeur.'
+    : arSupported ? `« Relevé RA » relève le niveau affiché (${lvl.name.toLowerCase()}). Si vous changez d’étage pendant le relevé, les pièces sont rangées au bon niveau automatiquement.`
+    : arMessage + ' Vous pouvez dessiner les pièces dans l’Éditeur.';
   $('#houseStatus').classList.toggle('warn', !h.demo && !arSupported);
   $('#delHouse').classList.toggle('hidden', !!h.demo);
   $('#delLevel').classList.toggle('hidden', !!h.demo || h.levels.length < 2);
+  renderNav();
 }
 $('#levelTabs').addEventListener('click', e => {
   const b = e.target.closest('[data-l]'); if (!b) return;
@@ -818,12 +988,30 @@ $('#houseBack').addEventListener('click', () => { renderHome(); show('#home'); }
 $('#houseName').addEventListener('input', e => { house.name = e.target.value || 'Logement'; if (!house.demo) persist(); });
 $('#dimsChk').addEventListener('change', renderHouse);
 $('#elecChk').addEventListener('change', renderHouse);
-$('#roomList').addEventListener('click', e => { const o = e.target.closest('[data-r]'); if (o) openRoom(house.rooms[+o.dataset.r]); });
+// Ouvre une pièce, directement dans l'éditeur en mode Éditeur
+function enterRoom(r){ openRoom(r); if (houseEditing) setEditing(true); }
+$('#roomList').addEventListener('click', e => { const o = e.target.closest('[data-r]'); if (o) enterRoom(house.rooms[+o.dataset.r]); });
+$('#housePlan').addEventListener('click', e => {
+  if (arranging) return;
+  const t = e.target.closest('[data-i]'); if (t) enterRoom(house.rooms[+t.dataset.i]);
+});
 $('#delHouse').addEventListener('click', () => {
   if (!confirm('Supprimer ce logement et toutes ses pièces ?')) return;
-  houses = houses.filter(h => h !== house); persist(); renderHome(); show('#home');
+  houses = houses.filter(h => h !== house); house = null; persist(); renderHome(); show('#home');
 });
-$('#scanBtn').addEventListener('click', startAR);
+// Pièce dessinée à la main : un rectangle à droite du niveau, à ajuster dans l'éditeur
+const DRAWN_ROOM = { w: 4, h: 3, gap: 0.5 };
+$('#drawBtn').addEventListener('click', () => {
+  const h = house, mine = levelRooms(h), ref = mine.length ? mine : h.rooms;
+  let ox = 0, oy = 0;
+  if (ref.length){ const [, y0, x1] = bbox(ref.map(r => r.pts)); ox = x1 + DRAWN_ROOM.gap; oy = y0; }
+  const { w, h: d } = DRAWN_ROOM;
+  const r = { id: uid('r'), name: uniqueName('Pièce', h.rooms.map(x => x.name)), pts: [[ox,oy],[ox+w,oy],[ox+w,oy+d],[ox,oy+d]],
+              height: 2.5, sid: uid('s'), levelId: h.curLevel, items: [] };
+  h.rooms = h.rooms.concat(r); save();
+  openRoom(r); setEditing(true);
+  toast('Pièce ajoutée : ajustez ses murs');
+});
 
 /* Ajustement de la disposition */
 function movingSet(){
@@ -873,13 +1061,41 @@ $('#housePlan').addEventListener('pointercancel', endDrag);
 
 /* Pièce */
 function openRoom(r){
-  roomRef = r; selItem = null; setPlacing(null);
+  roomRef = r; selItem = null; editing = false; selCorner = null; rdrag = null; editHistory = []; setPlacing(null);
   $('#roomName').value = r.name;
   $('#heightIn').value = (r.height || 2.5).toFixed(2);
   $('#roomLevel').innerHTML = house.levels.slice().reverse().map(l => `<option value="${l.id}"${l.id===r.levelId?' selected':''}>${escapeHtml(l.name)}</option>`).join('');
   renderRoom(); show('#room');
 }
 let placing = null, selItem = null;
+let editing = false, editAng = null, selCorner = null, rdrag = null, editHistory = [];
+// Annulation : instantané de la pièce avant chaque modification
+function snapshot(){
+  editHistory.push(JSON.stringify({ pts: roomRef.pts, items: roomRef.items || [] }));
+  if (editHistory.length > 60) editHistory.shift();
+}
+function undoEdit(){
+  const s = editHistory.pop(); if (!s) return;
+  const o = JSON.parse(s); roomRef.pts = o.pts; roomRef.items = o.items;
+  selCorner = null; if (selItem && !findItem(selItem)) selItem = null;
+  save(); renderRoom();
+}
+function setEditing(v){
+  editing = v; selCorner = null; rdrag = null;
+  editAng = v ? -longestAngle(roomRef.pts) : null;
+  if (v) setPlacing(null);
+  renderRoom();
+}
+$('#editBtn').addEventListener('click', () => setEditing(true));
+$('#editDone').addEventListener('click', () => setEditing(false));
+$('#undoEdit').addEventListener('click', undoEdit);
+$('#delCorner').addEventListener('click', () => {
+  const p = roomRef.pts; if (selCorner == null || p.length <= 3) return;
+  snapshot();
+  const np = p.filter((_, i) => i !== selCorner);
+  roomRef.items = reprojectItems(p, np, roomRef.items || []); roomRef.pts = np;
+  selCorner = null; save(); renderRoom();
+});
 $('#addType').innerHTML = '<optgroup label="Ouvertures">' + Object.entries(OPENINGS).map(([k,o]) => `<option value="o:${k}">${o.label}</option>`).join('') + '</optgroup>'
   + '<optgroup label="Électricité">' + Object.entries(DEVICES).map(([k,d]) => `<option value="d:${k}">${d.label}</option>`).join('') + '</optgroup>';
 function setPlacing(v){
@@ -897,29 +1113,87 @@ function roomToMeters(svg, e){
   const s = pt.matrixTransform(svg.getScreenCTM().inverse());
   return rotPts([[(s.x - tf.pad)/tf.S + tf.x0, (s.y - tf.pad)/tf.S + tf.y0]], -tf.ang)[0];
 }
+function focusWall(i){ const inp = document.getElementById('wl-' + i); if (inp){ inp.focus(); inp.select(); } }
 $('#roomPlan').addEventListener('click', e => {
   const svg = $('#roomPlan svg'); if (!svg) return;
   if (!placing){
+    if (editing) return; // sélection et déplacements gérés au pointerdown
+    const w = e.target.closest('[data-wall]'); if (w){ focusWall(w.dataset.wall); return; }
     const g = e.target.closest('[data-item]');
     selItem = g ? g.dataset.item : null; renderRoom();
     if (g){ const li = document.getElementById('it-' + selItem); if (li) li.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
     return;
   }
-  const r = roomRef, p = r.pts, q = roomToMeters(svg, e), i = nearestWall(p, q);
+  const r = roomRef, p = r.pts, q = roomToMeters(svg, e);
   const [kind, type] = placing.split(':');
-  let it;
-  if (kind === 'o'){
-    const L = wallLen(p, i), w = Math.min(OPENINGS[type].w, L * 0.95), tc = projT(p, i, q);
-    let t0 = tc - w/2/L, t1 = tc + w/2/L;
-    if (t0 < 0){ t1 -= t0; t0 = 0; } if (t1 > 1){ t0 -= t1 - 1; t1 = 1; }
-    it = { id: uid('i'), kind: 'opening', type, wall: i, t0, t1, swingOut: false, hingeEnd: false };
-  } else {
-    const def = DEVICES[type], t = projT(p, i, q), F = wallPoint(p, i, t), n = inwardNormal(p, i);
-    it = { id: uid('i'), kind: 'device', type, wall: i, t, d: def.wall ? 0 : Math.max(0.05, (q[0]-F[0])*n[0] + (q[1]-F[1])*n[1]), h: null };
-  }
-  (r.items = r.items || []).push(it);
+  const it = kind === 'o'
+    ? { id: uid('i'), kind: 'opening', type, ...openingAt(p, q, OPENINGS[type].w), swingOut: false, hingeEnd: false }
+    : { id: uid('i'), kind: 'device', h: null, ...anchorDevice(p, { type, d: 0 }, q) };
+  snapshot();
+  r.items = (r.items || []).concat(it);
   selItem = it.id; setPlacing(null); save(); renderRoom();
 });
+
+/* Édition du plan : glisser coins et éléments, « + » pour ajouter un coin */
+// Aligne le coin sur ses voisins (murs d'équerre) quand il en est proche à l'écran
+function snapCorner(p, k, q, f){
+  const n = p.length, v = rotPts([q], f.ang)[0], tol = 10 / f.S;
+  [p[(k-1+n)%n], p[(k+1)%n]].forEach(nb => {
+    const w = rotPts([nb], f.ang)[0];
+    if (Math.abs(v[0]-w[0]) < tol) v[0] = w[0];
+    if (Math.abs(v[1]-w[1]) < tol) v[1] = w[1];
+  });
+  return rotPts([v], -f.ang)[0];
+}
+function movedItem(p, it, dx, dy){
+  if (it.kind === 'device'){ const q = devicePos(p, it); return anchorDevice(p, it, [q[0]+dx, q[1]+dy]); }
+  const A = wallPoint(p, it.wall, it.t0), B = wallPoint(p, it.wall, it.t1);
+  return { ...it, ...openingAt(p, [(A[0]+B[0])/2 + dx, (A[1]+B[1])/2 + dy], dist(A, B), it.t1 >= it.t0 ? 1 : -1) };
+}
+$('#roomPlan').addEventListener('pointerdown', e => {
+  if (!editing || placing) return;
+  const svg = $('#roomPlan svg'); if (!svg) return;
+  const w = e.target.closest('[data-wall]'); if (w){ e.preventDefault(); focusWall(w.dataset.wall); return; }
+  const t = e.target.closest('[data-corner],[data-mid],[data-item]');
+  if (!t){ selCorner = null; selItem = null; renderRoom(); return; }
+  e.preventDefault();
+  snapshot();
+  const r = roomRef, frame = $('#roomPlan')._tf;
+  let corner = null, inserted = false;
+  if (t.dataset.mid != null){
+    const i = +t.dataset.mid, p = r.pts, a = p[i], b = p[(i+1)%p.length];
+    const np = [...p.slice(0, i+1), [(a[0]+b[0])/2, (a[1]+b[1])/2], ...p.slice(i+1)];
+    r.items = reprojectItems(p, np, r.items || []); r.pts = np; corner = i + 1; inserted = true;
+  } else if (t.dataset.corner != null) corner = +t.dataset.corner;
+  selCorner = corner; selItem = corner == null ? t.dataset.item : null;
+  rdrag = { frame, corner, item: selItem, start: roomToMeters(svg, e), moved: false, changed: inserted,
+            pts: r.pts.map(q => q.slice()), items: (r.items || []).map(i => ({ ...i })) };
+  $('#roomPlan').setPointerCapture(e.pointerId);
+  renderRoom();
+});
+$('#roomPlan').addEventListener('pointermove', e => {
+  if (!rdrag) return;
+  const svg = $('#roomPlan svg'); if (!svg) return;
+  const q = roomToMeters(svg, e), dx = q[0] - rdrag.start[0], dy = q[1] - rdrag.start[1];
+  if (!rdrag.moved && Math.hypot(dx, dy) * rdrag.frame.S < 4) return;
+  rdrag.moved = rdrag.changed = true;
+  const r = roomRef;
+  if (rdrag.corner != null){
+    const c = rdrag.pts[rdrag.corner], np = rdrag.pts.map(v => v.slice());
+    np[rdrag.corner] = snapCorner(np, rdrag.corner, [c[0]+dx, c[1]+dy], rdrag.frame);
+    r.pts = np; r.items = remapItems(rdrag.pts, np, rdrag.items);
+  } else {
+    r.items = rdrag.items.map(it => it.id === rdrag.item ? movedItem(rdrag.pts, it, dx, dy) : it);
+  }
+  renderRoom();
+});
+const endRoomDrag = () => {
+  if (!rdrag) return;
+  if (!rdrag.changed) editHistory.pop();
+  rdrag = null; save(); renderRoom();
+};
+$('#roomPlan').addEventListener('pointerup', endRoomDrag);
+$('#roomPlan').addEventListener('pointercancel', endRoomDrag);
 function renderItems(){
   const r = roomRef, p = r.pts, items = r.items || [];
   if (!items.length){ $('#itemList').innerHTML = '<li class="empty">Aucun élément. Ajoutez-en pendant le relevé en réalité augmentée, ou placez-les sur le plan ci-dessus.</li>'; return; }
@@ -947,6 +1221,7 @@ $('#itemList').addEventListener('click', e => {
   const d = b.dataset;
   if (d.selit){ selItem = selItem === d.selit ? null : d.selit; renderRoom(); return; }
   const it = findItem(d.flip || d.hinge || d.delit); if (!it) return;
+  snapshot();
   if (d.flip) it.swingOut = !it.swingOut;
   if (d.hinge) it.hingeEnd = !it.hingeEnd;
   if (d.delit){ roomRef.items = roomRef.items.filter(i => i !== it); if (selItem === it.id) selItem = null; }
@@ -954,6 +1229,7 @@ $('#itemList').addEventListener('click', e => {
 });
 $('#itemList').addEventListener('change', e => {
   const d = e.target.dataset, it = findItem(d.w || d.h); if (!it) return;
+  snapshot();
   if (d.h){ const v = parseFloat(e.target.value); it.h = isNaN(v) ? null : v; }
   if (d.w){
     const L = wallLen(roomRef.pts, it.wall), w = Math.max(0.3, Math.min(parseFloat(e.target.value) || 0, L));
@@ -966,15 +1242,35 @@ $('#itemList').addEventListener('change', e => {
 });
 function renderRoom(){
   const r = roomRef, p = r.pts, h = r.height || 0, A = area(p), P = perimeter(p);
-  const out = roomSVG(r, { sel: selItem });
+  const out = roomSVG(r, { sel: selItem, edit: editing, selCorner, ang: editing ? editAng : null, frame: rdrag ? rdrag.frame : null });
   $('#roomPlan').innerHTML = out.svg; $('#roomPlan')._tf = out.tf;
-  renderItems();
+  $('#roomPlan').classList.toggle('editing', editing);
+  $('#editPanel').classList.toggle('hidden', !editing);
+  $('#editBtn').classList.toggle('hidden', editing);
+  $('#undoEdit').disabled = !editHistory.length;
+  $('#delCorner').disabled = selCorner == null || p.length <= 3;
+  $('#editHint').textContent = selCorner != null
+    ? `Coin ${selCorner + 1} sélectionné : faites-le glisser, ou supprimez-le${p.length <= 3 ? ' (il faut au moins 3 coins)' : ''}.`
+    : 'Faites glisser les coins (ils s’alignent sur leurs voisins pour rester d’équerre), touchez un « + » pour ajouter un coin, et déplacez portes, fenêtres et appareils sur le plan. Touchez une cote pour la saisir.';
+  renderItems(); renderNav();
   $('#roomStats').innerHTML = [
     [fmt(A)+' m²','Surface au sol'], [fmt(P)+' m','Périmètre'],
     [h ? fmt(P*h)+' m²' : '–','Surface des murs'], [h ? fmt(A*h)+' m³' : '–','Volume']
   ].map(([n,l]) => `<div class="stat"><span class="num">${n}</span><span class="lab">${l}</span></div>`).join('');
-  $('#walls').innerHTML = p.map((a,i) => `<li><span>Mur ${i+1}</span><b>${fmt(dist(a,p[(i+1)%p.length]))} m</b></li>`).join('');
+  if (!$('#walls').contains(document.activeElement) || rdrag)
+    $('#walls').innerHTML = p.map((a,i) => `<li><span>Mur ${i+1}</span><label class="num-in"><input type="number" id="wl-${i}" data-wl="${i}" step="0.01" min="0.05" max="${MAX_WALL}" inputmode="decimal" value="${dist(a,p[(i+1)%p.length]).toFixed(2)}" aria-label="Longueur du mur ${i+1}"> m</label></li>`).join('');
 }
+const MAX_WALL = 50;
+$('#walls').addEventListener('change', e => {
+  const i = e.target.dataset.wl; if (i == null) return;
+  const L = parseFloat(e.target.value);
+  if (!(L >= 0.05 && L <= MAX_WALL)){ toast(`Longueur entre 0,05 et ${MAX_WALL} m`); e.target.blur(); renderRoom(); return; }
+  const p = roomRef.pts; if (Math.abs(L - wallLen(p, +i)) < 0.005) return;
+  snapshot();
+  const np = setWallLength(p, +i, L);
+  roomRef.items = remapItems(p, np, roomRef.items || []); roomRef.pts = np;
+  e.target.blur(); save(); renderRoom();
+});
 $('#roomName').addEventListener('input', e => { roomRef.name = e.target.value || 'Pièce'; save(); });
 $('#heightIn').addEventListener('input', e => { roomRef.height = parseFloat(e.target.value) || 0; save(); renderRoom(); });
 $('#roomLevel').addEventListener('change', e => { roomRef.levelId = e.target.value; house.curLevel = e.target.value; save(); toast('Pièce déplacée vers ' + curLevel(house).name); });
@@ -1368,7 +1664,7 @@ function onEnd(){
     try { localStorage.removeItem(DRAFT); } catch(e){}
     renderHouse(); show('#house');
     const nl = new Set(list.map(r => r.dl || 0)).size;
-    toast(separate ? 'Nouvelles pièces ajoutées à droite du plan. Placez-les avec « Ajuster la disposition »'
+    toast(separate ? 'Nouvelles pièces ajoutées à droite du plan. Placez-les dans l’Éditeur, avec « Ajuster la disposition »'
                    : `${list.length} pièce${list.length>1?'s':''} ajoutée${list.length>1?'s':''}` + (nl > 1 ? ` sur ${nl} niveaux` : ' au plan'));
   } else { renderHouse(); show('#house'); }
 }
@@ -1432,11 +1728,13 @@ async function checkSupport(){
     setStatus('La RA est bloquée dans cette vue. Ouvrez la page directement dans Chrome (menu ⋮, Ouvrir dans le navigateur).', true);
   }
   if (house && !$('#house').classList.contains('hidden')) renderHouse();
+  renderNav();
 }
 
 const hv = makeView(SAMPLE_ROOMS);
 $('#heroPlan').innerHTML = houseSVG(SAMPLE_ROOMS, hv, {});
 renderHome();
+renderNav();
 checkSupport();
 })();
 </script>
