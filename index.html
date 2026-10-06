@@ -114,6 +114,12 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 .print-theme{--paper:#fff;--sheet:#fff;--ink:#111;--ink-soft:#555;--line:#999;--grid:#ddd;--laser:#111;--fill:none;--elec:#1D4F91;position:fixed;left:-10000px;top:0;width:1123px;height:794px;overflow:hidden}
 .print-theme .rn,.print-theme .ra{stroke:none}
 .print-theme .joint{fill:#111;opacity:1}
+/* Menu contextuel du plan */
+.ctx{position:fixed;z-index:40;min-width:240px;max-width:calc(100vw - 16px);background:var(--sheet);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.2);padding:6px}
+.ctx .ctx-h{font:600 15px "Barlow Condensed",sans-serif;color:var(--ink-soft);padding:6px 12px 4px}
+.ctx button{display:block;width:100%;text-align:left;background:none;border:0;border-radius:6px;padding:10px 12px;min-height:44px;color:var(--ink)}
+.ctx button:hover:not(:disabled),.ctx button:focus-visible{background:var(--fill)}
+.ctx button:disabled{opacity:.4;cursor:default}
 /* Murs mitoyens */
 .joint{fill:var(--ink-soft);opacity:.3}
 .jbadge circle{fill:var(--laser)}
@@ -169,7 +175,8 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 .op .swing{stroke:var(--ink-soft);stroke-width:1;stroke-dasharray:3 3}
 .op .slide{stroke:var(--ink);stroke-width:2.4}
 .op .hit{stroke:transparent;stroke-width:18}
-.op.sel .jamb,.op.sel .leaf,.op.sel .wleaf,.op.sel .glass,.op.sel .slide,.op.sel .swing{stroke:var(--laser)}
+.op .pass{stroke:var(--ink);stroke-width:1.4;stroke-dasharray:5 4}
+.op.sel .jamb,.op.sel .leaf,.op.sel .wleaf,.op.sel .glass,.op.sel .slide,.op.sel .swing,.op.sel .pass{stroke:var(--laser)}
 .icon{width:30px;height:28px;flex:none}
 .icon .w{stroke:var(--ink);stroke-width:2.5}
 .legend{display:flex;flex-wrap:wrap;gap:4px 16px;margin:10px 0 0;font-size:14px;color:var(--ink-soft)}
@@ -375,6 +382,7 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
   <button data-nav="scan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/><circle cx="12" cy="12" r="3"/></svg>Relevé RA</button>
 </nav>
 
+<div class="ctx hidden" id="ctxMenu" role="menu"></div>
 <div class="toast hidden" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -647,6 +655,7 @@ function openingSVG(p, it, T, S, sel = false, hit = false){
       g += glass() + line(add(P0, nn, 3*px), add(add(P0, u, w*0.55), nn, 3*px), 'slide')
                    + line(add(P1, nn, -3*px), add(add(P1, u, -w*0.55), nn, -3*px), 'slide');
       break;
+    case 'passage': g += line(P0, P1, 'pass'); break; // tracé du mur absent
   }
   if (hit) g += line(P0, P1, 'hit');
   return `<g class="op${sel ? ' sel' : ''}" data-item="${it.id}">${g}</g>`;
@@ -813,11 +822,11 @@ function jointB(jt, u){
 // Ouvertures des deux murs, en abscisses le long de A
 function jointHoles(jt){
   const holes = [], LA = wallLen(jt.A.pts, jt.wa), sOf = X => dot([X[0]-jt.a0[0], X[1]-jt.a0[1]], jt.ua);
-  (jt.A.items || []).forEach(it => { if (it.kind === 'opening' && it.wall === jt.wa) holes.push([Math.min(it.t0, it.t1)*LA, Math.max(it.t0, it.t1)*LA, 'A']); });
+  (jt.A.items || []).forEach(it => { if (it.kind === 'opening' && it.wall === jt.wa) holes.push([Math.min(it.t0, it.t1)*LA, Math.max(it.t0, it.t1)*LA, 'A', it.type]); });
   (jt.B.items || []).forEach(it => {
     if (it.kind !== 'opening' || it.wall !== jt.wb) return;
     const u0 = sOf(wallPoint(jt.B.pts, jt.wb, it.t0)), u1 = sOf(wallPoint(jt.B.pts, jt.wb, it.t1));
-    holes.push([Math.min(u0, u1), Math.max(u0, u1), 'B']);
+    holes.push([Math.min(u0, u1), Math.max(u0, u1), 'B', it.type]);
   });
   return holes;
 }
@@ -838,11 +847,11 @@ function jointsSVG(h, levelId, T, S, badges){
       bands += `<polygon class="joint" points="${[jointA(jt, u0), jointA(jt, u1), jointB(jt, u1), jointB(jt, u0)].map(P).join(' ')}"/>`;
     });
     // Une ouverture d'une pièce coupe aussi le mur d'en face
-    holes.forEach(([h0, h1, side]) => {
+    holes.forEach(([h0, h1, side, type]) => {
       const u0 = Math.max(h0, jt.s0), u1 = Math.min(h1, jt.s1); if (u1 - u0 < 0.05) return;
       const at = side === 'A' ? u => jointB(jt, u) : u => jointA(jt, u), n = side === 'A' ? jt.nb : jt.na;
       const Q0 = at(u0), Q1 = at(u1), j = (Q, s) => [Q[0] + n[0]*s*px, Q[1] + n[1]*s*px];
-      cuts += ln(Q0, Q1, 'cut') + ln(j(Q0, -4), j(Q0, 4), 'jamb') + ln(j(Q1, -4), j(Q1, 4), 'jamb');
+      cuts += ln(Q0, Q1, 'cut') + ln(j(Q0, -4), j(Q0, 4), 'jamb') + ln(j(Q1, -4), j(Q1, 4), 'jamb') + (type === 'passage' ? ln(Q0, Q1, 'pass') : '');
     });
     if (badges){
       const um = (jt.s0 + jt.s1) / 2, [x, y] = T(jointA(jt, um)), [x2, y2] = T(jointB(jt, um));
@@ -1448,8 +1457,72 @@ $('#elecChk').addEventListener('change', renderHouse);
 function enterRoom(r){ openRoom(r); if (houseEditing) setEditing(true); }
 $('#roomList').addEventListener('click', e => { const o = e.target.closest('[data-r]'); if (o) enterRoom(house.rooms[+o.dataset.r]); });
 $('#housePlan').addEventListener('click', e => {
-  if (arranging) return;
+  if (arranging || ctxOpen()) return;
   const t = e.target.closest('[data-i]'); if (t) enterRoom(house.rooms[+t.dataset.i]);
+});
+
+/* Ajuster une pièce à ses voisines : le mur s'étend sur toute la longueur des murs mitoyens d'en face */
+const FIT = { shrink: 0.3, eps: 0.005 };
+function fitWall(h, r, w){
+  const p = r.pts, n = p.length, a = p[w], b = p[(w+1)%n], L = dist(a, b);
+  const js = detectJoints(h, r.levelId).filter(j => !j.off && ((j.A === r && j.wa === w) || (j.B === r && j.wb === w)));
+  if (!js.length || L < 1e-6) return null;
+  const u = [(b[0]-a[0])/L, (b[1]-a[1])/L], s = X => dot([X[0]-a[0], X[1]-a[1]], u);
+  const ends = js.flatMap(j => { const o = j.A === r ? j.B : j.A, ow = j.A === r ? j.wb : j.wa; return [s(o.pts[ow]), s(o.pts[(ow+1)%o.pts.length])]; });
+  // allongement à chaque bout ; raccourcissement seulement pour un petit dépassement
+  const keep = e => e > -FIT.shrink ? e : 0;
+  const e0 = keep(-Math.min(...ends)), e1 = keep(Math.max(...ends) - L);
+  if (Math.abs(e0) < FIT.eps && Math.abs(e1) < FIT.eps) return { pts: p, e0: 0, e1: 0 };
+  let np = Math.abs(e1) >= FIT.eps ? setWallLength(p, w, L + e1) : p;
+  if (Math.abs(e0) >= FIT.eps){
+    // même opération côté début du mur, sur le polygone parcouru à l'envers
+    const rev = np.slice().reverse(), j = ((n - 2 - w) % n + n) % n;
+    np = setWallLength(rev, j, dist(np[w], np[(w+1)%n]) + e0).reverse();
+  }
+  return { pts: np, e0, e1 };
+}
+const fitChanges = (h, r, w) => { const f = fitWall(h, r, w); return !!f && Math.abs(f.e0) + Math.abs(f.e1) >= FIT.eps; };
+let lastFit = null;
+function applyFit(r, walls){
+  const before = { room: r, pts: r.pts.map(q => q.slice()), items: (r.items || []).map(i => ({ ...i })) };
+  let total = 0;
+  walls.forEach(w => {
+    const f = fitWall(house, r, w); if (!f) return;
+    r.items = remapItems(r.pts, f.pts, r.items || []); r.pts = f.pts; total += f.e0 + f.e1;
+  });
+  if (Math.abs(total) < FIT.eps){ toast(`${r.name} est déjà ajustée à ses voisines`); return; }
+  lastFit = before; save(); renderHouse();
+  toast(`${r.name} ajustée : ${total > 0 ? '+' : '−'}${fmt(Math.abs(total))} m`);
+}
+const ctxOpen = () => !$('#ctxMenu').classList.contains('hidden');
+function closeCtx(){ $('#ctxMenu').classList.add('hidden'); }
+function openCtx(x, y, title, entries){
+  const m = $('#ctxMenu');
+  m.innerHTML = `<div class="ctx-h">${escapeHtml(title)}</div>` + entries.map(([lab, on], k) => `<button role="menuitem" data-k="${k}"${on ? '' : ' disabled'}>${lab}</button>`).join('');
+  m.onclick = e => { const b = e.target.closest('[data-k]'); if (!b || b.disabled) return; closeCtx(); entries[+b.dataset.k][2](); };
+  m.classList.remove('hidden');
+  const { width, height } = m.getBoundingClientRect();
+  m.style.left = Math.max(8, Math.min(x, innerWidth - width - 8)) + 'px';
+  m.style.top = Math.max(8, Math.min(y, innerHeight - height - 8)) + 'px';
+  const first = m.querySelector('button:not(:disabled)'); if (first) first.focus();
+}
+document.addEventListener('pointerdown', e => { if (ctxOpen() && !e.target.closest('#ctxMenu')) closeCtx(); }, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && ctxOpen()) closeCtx(); });
+addEventListener('scroll', () => { if (ctxOpen()) closeCtx(); }, { passive: true });
+// Clic droit (ou appui long sur mobile) sur une pièce du plan
+$('#housePlan').addEventListener('contextmenu', e => {
+  if (arranging) return;
+  const t = e.target.closest('[data-i]'), svg = $('#hsvg'); if (!t || !svg) return;
+  e.preventDefault();
+  const r = house.rooms[+t.dataset.i], w = nearestWall(r.pts, toMeters(svg, e));
+  const undo = lastFit && house.rooms.includes(lastFit.room);
+  openCtx(e.clientX, e.clientY, r.name, [
+    [`Ajuster le mur ${w + 1} aux pièces voisines`, fitChanges(house, r, w), () => applyFit(r, [w])],
+    ['Ajuster toute la pièce aux pièces voisines', r.pts.some((_, i) => fitChanges(house, r, i)), () => applyFit(r, r.pts.map((_, i) => i))],
+    [undo ? `Annuler l’ajustement de ${escapeHtml(lastFit.room.name)}` : 'Annuler l’ajustement', !!undo, () => {
+      lastFit.room.pts = lastFit.pts; lastFit.room.items = lastFit.items; lastFit = null; save(); renderHouse(); toast('Ajustement annulé'); }],
+    ['Modifier la pièce', true, () => enterRoom(r)]
+  ]);
 });
 $('#delHouse').addEventListener('click', () => {
   if (!confirm('Supprimer ce logement et toutes ses pièces ?')) return;
