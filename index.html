@@ -110,6 +110,9 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 }
 .toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:999px;font-weight:500;z-index:30;transition:opacity .2s;max-width:90vw;text-align:center}
 
+/* Export PDF : rendu hors écran, couleurs d'impression */
+.print-theme{--paper:#fff;--sheet:#fff;--ink:#111;--ink-soft:#555;--line:#999;--grid:#ddd;--laser:#111;--fill:none;--elec:#1D4F91;position:fixed;left:-10000px;top:0;width:1123px;height:794px;overflow:hidden}
+.print-theme .rn,.print-theme .ra{stroke:none}
 @media (min-width:900px){ .toast{bottom:calc(24px + env(safe-area-inset-bottom,0px));margin-left:calc(var(--nav-w) / -2)} }
 /* Overlay AR */
 #overlay{position:fixed;inset:0;z-index:10;color:#fff;font-family:Barlow,system-ui,sans-serif;pointer-events:none}
@@ -267,7 +270,10 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
   </div>
   <div class="stats" id="houseStats"></div>
   <p class="status" id="houseStatus"></p>
-  <div class="row"><button class="btn btn-ghost" id="shareBtn">Partager par lien</button></div>
+  <div class="row">
+    <button class="btn btn-ghost" id="pdfBtn">Exporter en PDF</button>
+    <button class="btn btn-ghost" id="shareBtn">Partager par lien</button>
+  </div>
   <h2>Pièces</h2>
   <ul class="list" id="roomList"></ul>
   <div class="row" style="justify-content:space-between">
@@ -659,7 +665,7 @@ function editHandles(p, pts, selCorner){
 const MID_INSET = 34; // décalage des « + » vers l'intérieur, au-delà des symboles muraux
 function roomSVG(room, o = {}){
   const raw = room.pts;
-  const f = o.frame || roomFrame(raw, o.ang != null ? o.ang : -longestAngle(raw), o.edit ? 60 : 46);
+  const f = o.frame || roomFrame(raw, 0, o.edit ? 60 : 46); // orientation du plan du logement
   const { ang, x0, y0, S, pad, W, H } = f, p = rotPts(raw, ang);
   const T=([x,y])=>[(x-x0)*S+pad,(y-y0)*S+pad];
   const pts=p.map(T), poly=pts.map(q=>q.map(v=>v.toFixed(1)).join(',')).join(' ');
@@ -693,6 +699,20 @@ function makeView(rooms, margin = 0.6){
   return { S, minX, minY, pad, W:w*S+2*pad, H:h*S+2*pad+22 };
 }
 function roomColor(i, a){ const c=PALETTE[i%PALETTE.length]; return a==null ? `rgb(${c})` : `rgba(${c},${a})`; }
+// Place le nom et la surface d'une pièce à l'écart des luminaires : le cadre de l'étiquette doit tenir
+// dans la pièce, puis on privilégie le dégagement, puis la proximité du centre
+function labelSpot(r, lp, avoid){
+  const hw = 0.1 + Math.max(r.name.length, 7) * 0.045;
+  const box = q => [[-hw, -.3], [hw, -.3], [-hw, .45], [hw, .45]].every(([dx, dy]) => inside([q[0] + dx, q[1] + dy], r.pts));
+  let best = lp, bs = -Infinity;
+  for (let i = -5; i <= 5; i++) for (let j = -4; j <= 4; j++){
+    const q = [lp[0] + i * 0.3, lp[1] + j * 0.3]; if (!inside(q, r.pts)) continue;
+    const clear = Math.min(0.8, ...avoid.map(c => dist(c, q)));
+    const s = (box(q) ? 10 : 0) + clear * 3 - Math.hypot(q[0] - lp[0], q[1] - lp[1]);
+    if (s > bs){ bs = s; best = q; }
+  }
+  return best;
+}
 function houseLayer(rooms, v, opts){
   const T=([x,y])=>[(x-v.minX)*v.S+v.pad,(y-v.minY)*v.S+v.pad];
   let polys='', labels='', items='';
@@ -703,15 +723,13 @@ function houseLayer(rooms, v, opts){
     }
     const sel = opts.sel && opts.sel.has(i);
     const pts = r.pts.map(T).map(q=>q.map(n=>n.toFixed(1)).join(',')).join(' ');
-    polys += `<polygon data-i="${i}" class="room${sel?' sel':''}" style="fill:${roomColor(i, sel?.28:.14)}" points="${pts}"/>`;
+    polys += `<polygon data-i="${i}" class="room${sel?' sel':''}" style="fill:${opts.fill || roomColor(i, sel?.28:.14)}" points="${pts}"/>`;
     if (opts.dims) labels += dimLabels(r.pts, T, 10);
     items += itemsSVG(r.pts, r.items, T, v.S, { elec: opts.elec !== false });
     // Décale le nom si un luminaire est au même endroit
     let lp = labelPoint(r.pts);
     const ceil = (r.items||[]).filter(it => it.kind === 'device' && DEVICES[it.type] && !DEVICES[it.type].wall && it.wall < r.pts.length).map(it => devicePos(r.pts, it));
-    if (opts.elec !== false && ceil.some(c => dist(c, lp) < 0.5)){
-      const alt = [lp[0], lp[1] + 0.6]; if (inside(alt, r.pts)) lp = alt;
-    }
+    if (opts.elec !== false && ceil.some(c => dist(c, lp) < 0.5)) lp = labelSpot(r, lp, ceil);
     const [lx,ly] = T(lp);
     labels += `<text x="${lx.toFixed(1)}" y="${(ly-2).toFixed(1)}" text-anchor="middle" class="rn" pointer-events="none">${escapeHtml(r.name)}</text>
                <text x="${lx.toFixed(1)}" y="${(ly+14).toFixed(1)}" text-anchor="middle" class="ra" pointer-events="none">${fmt(area(r.pts),1)} m²</text>`;
@@ -869,8 +887,9 @@ function unpackItem(a, n, int){
              h: a[5] == null ? null : int(a[5], 0, 100 * MM) / MM };
   return null; // type inconnu (version plus récente) : ignoré
 }
-const b64u = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s); };
+const b64u = bytes => b64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
 // zlib (« deflate ») : compact, et sa somme de contrôle détecte un lien tronqué
 async function deflate(text){
@@ -921,6 +940,182 @@ $('#shareBtn').addEventListener('click', async () => {
   }
   try { await navigator.clipboard.writeText(url); toast('Lien copié dans le presse-papiers'); }
   catch (e){ prompt('Copiez ce lien :', url); }
+});
+
+/* ---------- Export PDF ---------- */
+// Planche A4 paysage par niveau, à l'échelle normalisée : cadre, cartouche, tableau des surfaces, légende
+const PDF_LIBS = ['https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js',
+                  'https://cdn.jsdelivr.net/npm/svg2pdf.js@2.8.1/dist/svg2pdf.umd.min.js'];
+const PDF_FONT_BASE = 'https://cdn.jsdelivr.net/npm/@expo-google-fonts/';
+const PDF_FONTS = [ // [famille, style jsPDF, fichier]
+  ['Barlow', 'normal', 'barlow@0.4.1/400Regular/Barlow_400Regular.ttf'],
+  ['Barlow', 'bold', 'barlow@0.4.1/600SemiBold/Barlow_600SemiBold.ttf'],
+  ['BarlowCondensed', 'normal', 'barlow-condensed@0.4.1/600SemiBold/BarlowCondensed_600SemiBold.ttf'],
+  ['BarlowCondensed', 'bold', 'barlow-condensed@0.4.1/700Bold/BarlowCondensed_700Bold.ttf']
+];
+const PDF = { W: 297, H: 210, m: 10, col: 212, unit: 0.2, margin: 0.4,
+  scales: [50, 75, 100, 125, 150, 200, 250, 500, 1000], plan: { x: 15, y: 25, w: 192, h: 157 } };
+const PDF_PROPS = ['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'opacity', 'font-size', 'text-anchor'];
+const PAGE_STYLE = `<style>
+  .pg-frame{fill:none;stroke:#111;stroke-width:.5} .pg-thin{fill:none;stroke:#111;stroke-width:.2}
+  .pg-lab{font:500 2px Barlow,sans-serif;fill:#666} .pg-val{font:600 3.2px Barlow,sans-serif;fill:#111}
+  .pg-big{font:700 5.5px "Barlow Condensed",sans-serif;fill:#111} .pg-title{font:700 7px "Barlow Condensed",sans-serif;fill:#111}
+  .pg-sub{font:400 2.8px Barlow,sans-serif;fill:#555} .pg-cell{font:400 2.5px Barlow,sans-serif;fill:#111}
+  .pg-cellb{font:600 2.5px Barlow,sans-serif;fill:#111} .pg-note{font:400 2.1px Barlow,sans-serif;fill:#555}
+  .pg-black{fill:#111;stroke:#111;stroke-width:.2} .pg-white{fill:#fff;stroke:#111;stroke-width:.2}
+</style>`;
+const loaded = {};
+const loadScript = src => loaded[src] || (loaded[src] = new Promise((ok, ko) => {
+  const el = document.createElement('script'); el.src = src; el.onload = ok;
+  el.onerror = () => { delete loaded[src]; ko(new Error('Chargement impossible : ' + src)); };
+  document.head.append(el);
+}));
+let pdfFontData = null;
+async function registerFonts(doc){
+  try {
+    pdfFontData = pdfFontData || await Promise.all(PDF_FONTS.map(async ([, , file]) => {
+      const r = await fetch(PDF_FONT_BASE + file); if (!r.ok) throw new Error(r.status + ' ' + file);
+      return b64(new Uint8Array(await r.arrayBuffer()));
+    }));
+    PDF_FONTS.forEach(([fam, style, file], i) => { const n = file.split('/').pop(); doc.addFileToVFS(n, pdfFontData[i]); doc.addFont(n, fam, style); });
+    return true;
+  } catch (e){ console.warn('Polices indisponibles, repli sur Helvetica', e); return false; }
+}
+const trunc = (str, n) => str.length > n ? str.slice(0, n - 1) + '…' : str;
+// Sans les polices embarquées, Helvetica (WinAnsi) ne connaît que le Latin-1
+const latin1 = str => str.replace(/[’‘]/g, "'").replace(/[–—−]/g, '-').replace(/…/g, '...').replace(/[^\x20-\xFF]/g, '?');
+function planLayout(rooms){
+  const [x0, y0, x1, y1] = bbox(rooms.map(r => r.pts)), P = PDF.plan, mg = PDF.margin;
+  const w = x1 - x0 + 2*mg, h = y1 - y0 + 2*mg;
+  const fits = d => w*1000/d <= P.w && h*1000/d <= P.h;
+  const d = PDF.scales.find(fits) || Math.ceil(Math.max(w*1000/P.w, h*1000/P.h));
+  const pw = w*1000/d, ph = h*1000/d;
+  return { d, view: { S: 1000 / (PDF.unit * d), minX: x0 - mg, minY: y0 - mg, pad: 0 },
+           ox: P.x + (P.w - pw)/2, oy: P.y + (P.h - ph)/2 };
+}
+function scaleBar(d, x, y){
+  const L = [50, 20, 10, 5, 2, 1].find(l => l*1000/d <= 60) || 1, segs = L <= 5 ? L : 5, sw = L/segs*1000/d;
+  let g = '';
+  for (let i = 0; i < segs; i++) g += `<rect class="${i % 2 ? 'pg-white' : 'pg-black'}" x="${(x + i*sw).toFixed(2)}" y="${y}" width="${sw.toFixed(2)}" height="1.6"/>`;
+  const end = x + segs*sw, std = PDF.scales.includes(d);
+  return g + `<text class="pg-note" x="${x}" y="${y + 4.6}">0</text><text class="pg-note" x="${end.toFixed(2)}" y="${y + 4.6}" text-anchor="middle">${L} m</text>`
+           + `<text class="pg-cellb" x="${(end + 6).toFixed(2)}" y="${y + 1.7}">Échelle 1:${d}${std ? '' : ' (ajustée)'}</text>`;
+}
+function surfaceTable(h, rooms, x, y, maxY){
+  const c = PDF.col, x1 = PDF.W - PDF.m, rowH = 4.6, e = escapeHtml;
+  let g = `<text class="pg-lab" x="${x}" y="${y}">TABLEAU DES SURFACES</text>`;
+  y += 5.5;
+  g += `<text class="pg-cellb" x="${x}" y="${y}">Pièce</text><text class="pg-cellb" x="${x1 - 17}" y="${y}" text-anchor="end">Surface</text><text class="pg-cellb" x="${x1 - 2}" y="${y}" text-anchor="end">H.s.p.</text>`;
+  g += `<line class="pg-thin" x1="${c}" y1="${y + 1.6}" x2="${x1}" y2="${y + 1.6}"/>`;
+  const totals = [['Total niveau', rooms.reduce((t, r) => t + area(r.pts), 0)]];
+  if (h.levels.filter(l => levelRooms(h, l.id).length).length > 1) totals.push(['Total logement', houseArea(h)]);
+  const room = rooms.length;
+  const fit = Math.max(1, Math.floor((maxY - y - 3 - totals.length*rowH) / rowH));
+  const shown = room > fit ? rooms.slice(0, fit - 1) : rooms;
+  shown.forEach(r => {
+    y += rowH;
+    g += `<text class="pg-cell" x="${x}" y="${y}">${e(trunc(r.name, 28))}</text><text class="pg-cell" x="${x1 - 17}" y="${y}" text-anchor="end">${fmt(area(r.pts))} m²</text>`
+       + `<text class="pg-cell" x="${x1 - 2}" y="${y}" text-anchor="end">${r.height ? fmt(r.height) + ' m' : '–'}</text>`;
+  });
+  if (shown.length < room){ y += rowH; g += `<text class="pg-note" x="${x}" y="${y}">… et ${room - shown.length} autres pièces</text>`; }
+  g += `<line class="pg-thin" x1="${c}" y1="${y + 1.6}" x2="${x1}" y2="${y + 1.6}"/>`;
+  totals.forEach(([lab, a]) => { y += rowH; g += `<text class="pg-cellb" x="${x}" y="${y}">${lab}</text><text class="pg-cellb" x="${x1 - 17}" y="${y}" text-anchor="end">${fmt(a)} m²</text>`; });
+  return { svg: g, y };
+}
+function legend(rooms, x, y, maxY){
+  const counts = {};
+  rooms.forEach(r => (r.items || []).forEach(i => { if (i.kind === 'device' && own(DEVICES, i.type)) counts[i.type] = (counts[i.type] || 0) + 1; }));
+  const types = Object.keys(DEVICES).filter(k => counts[k]);
+  if (!types.length) return '';
+  const x1 = PDF.W - PDF.m, rowH = 6;
+  let g = `<text class="pg-lab" x="${x}" y="${y}">LÉGENDE – ÉQUIPEMENTS ÉLECTRIQUES</text>`;
+  y += 2;
+  types.forEach(k => {
+    if (y + rowH > maxY) return;
+    const wall = DEVICES[k].wall, cy = y + (wall ? 1.4 : 3);
+    g += `<g transform="translate(${x + 4} ${cy}) scale(0.2)">${wall ? '<line x1="-14" y1="0" x2="14" y2="0" stroke="#111" stroke-width="2.5"/>' : ''}<g class="dev">${symbol(k)}</g></g>`
+       + `<text class="pg-cell" x="${x + 11}" y="${y + 4}">${DEVICES[k].label}</text><text class="pg-cellb" x="${x1 - 2}" y="${y + 4}" text-anchor="end">${counts[k]}</text>`;
+    y += rowH;
+  });
+  return g;
+}
+function titleBlock(h, lvl, k, n, d, date){
+  const c = PDF.col, x1 = PDF.W - PDF.m, y0 = 150, half = c + (x1 - c)/2, e = escapeHtml;
+  const cell = (x, y, lab, val, cls = 'pg-val') => `<text class="pg-lab" x="${x + 2}" y="${y + 3.6}">${lab}</text><text class="${cls}" x="${x + 2}" y="${y + 9}">${val}</text>`;
+  return `<line class="pg-frame" x1="${c}" y1="${y0}" x2="${x1}" y2="${y0}"/>`
+    + [166, 178, 189].map(y => `<line class="pg-thin" x1="${c}" y1="${y}" x2="${x1}" y2="${y}"/>`).join('')
+    + `<line class="pg-thin" x1="${half}" y1="178" x2="${half}" y2="${PDF.H - PDF.m}"/>`
+    + `<text class="pg-lab" x="${c + 2}" y="${y0 + 3.6}">PROJET – RELEVÉ DE LOGEMENT</text><text class="pg-big" x="${c + 2}" y="${y0 + 11.5}">${e(trunc(h.name, 30))}</text>`
+    + cell(c, 166, 'PLAN', 'Niveau : ' + e(trunc(lvl.name, 26)))
+    + cell(c, 178, 'ÉCHELLE', '1:' + d) + cell(half, 178, 'FORMAT', 'A4 paysage')
+    + cell(c, 189, 'DATE', date) + cell(half, 189, 'PLANCHE', `${k + 1} / ${n}`);
+}
+function pageSVG(h, lvl, k, n, lay, date){
+  const P = PDF, rooms = levelRooms(h, lvl.id), x1 = P.W - P.m, y1 = P.H - P.m, e = escapeHtml;
+  const la = rooms.reduce((t, r) => t + area(r.pts), 0);
+  const table = surfaceTable(h, rooms, P.col + 2, 18, 100);
+  const plan = houseLayer(h.rooms, lay.view, { level: lvl.id, dims: true, elec: true, fill: '#fff' });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${P.W} ${P.H}" width="${P.W}" height="${P.H}">${SVG_STYLE}${PAGE_STYLE}
+    <rect x="0" y="0" width="${P.W}" height="${P.H}" fill="#fff"/>
+    <rect class="pg-frame" x="${P.m}" y="${P.m}" width="${P.W - 2*P.m}" height="${P.H - 2*P.m}"/>
+    <rect class="pg-thin" x="${P.m + 1.2}" y="${P.m + 1.2}" width="${P.W - 2*P.m - 2.4}" height="${P.H - 2*P.m - 2.4}"/>
+    <line class="pg-frame" x1="${P.col}" y1="${P.m}" x2="${P.col}" y2="${y1}"/>
+    <text class="pg-title" x="15" y="${P.m + 9}">${e(trunc(lvl.name.toUpperCase(), 40))}</text>
+    <text class="pg-sub" x="15" y="${P.m + 13.5}">${e(trunc(h.name, 50))} · ${rooms.length} pièce${rooms.length > 1 ? 's' : ''} · ${fmt(la, 1)} m²</text>
+    <g transform="translate(${lay.ox.toFixed(2)} ${lay.oy.toFixed(2)}) scale(${P.unit})">${plan}</g>
+    ${scaleBar(lay.d, 15, 187)}
+    <text class="pg-note" x="15" y="${y1 - 2.5}">Cotes en mètres, mesurées par relevé en réalité augmentée : indicatives, à vérifier sur place.</text>
+    ${table.svg}${legend(rooms, P.col + 2, Math.max(table.y + 9, 60), 146)}${titleBlock(h, lvl, k, n, lay.d, date)}</svg>`;
+}
+// svg2pdf ignore les variables CSS : on fige les styles calculés en attributs
+function inlineStyles(svg, fonts){
+  // Lecture complète avant toute écriture : retirer une classe casserait les sélecteurs des descendants
+  const els = [...svg.querySelectorAll('*')].filter(el => el.tagName !== 'style');
+  const styles = els.map(el => {
+    const cs = getComputedStyle(el), o = {};
+    [...PDF_PROPS, 'font-family', 'font-weight', 'dominant-baseline'].forEach(p => { o[p] = cs.getPropertyValue(p); });
+    return o;
+  });
+  els.forEach((el, i) => {
+    const s = styles[i], cs = { fontFamily: s['font-family'], fontWeight: s['font-weight'], dominantBaseline: s['dominant-baseline'], fontSize: s['font-size'] };
+    PDF_PROPS.forEach(p => { if (s[p]) el.setAttribute(p, s[p]); });
+    if (el.tagName === 'text' || el.tagName === 'tspan'){
+      const cond = /Condensed/.test(cs.fontFamily), w = parseInt(cs.fontWeight, 10) || 400;
+      el.setAttribute('font-family', fonts ? (cond ? 'BarlowCondensed' : 'Barlow') : 'helvetica');
+      el.setAttribute('font-weight', (cond ? w >= 700 : w >= 600) ? 'bold' : 'normal');
+      // dominant-baseline mal pris en charge : décalage explicite
+      if (el.tagName === 'text' && /middle|central/.test(cs.dominantBaseline)) el.setAttribute('dy', (parseFloat(cs.fontSize) * 0.35).toFixed(2));
+      if (!fonts) el.childNodes.forEach(nd => { if (nd.nodeType === 3) nd.textContent = latin1(nd.textContent); });
+    }
+    el.removeAttribute('class'); el.removeAttribute('style'); el.removeAttribute('dominant-baseline');
+  });
+  svg.querySelectorAll('style').forEach(st => st.remove());
+}
+async function exportPDF(h){
+  for (const src of PDF_LIBS) await loadScript(src);
+  const doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
+  const fonts = await registerFonts(doc);
+  const levels = h.levels.filter(l => levelRooms(h, l.id).length);
+  const lay = planLayout(h.rooms), date = new Date().toLocaleDateString('fr-FR');
+  const host = document.createElement('div'); host.className = 'print-theme'; host.setAttribute('aria-hidden', 'true');
+  document.body.append(host);
+  try {
+    for (let k = 0; k < levels.length; k++){
+      if (k) doc.addPage('a4', 'landscape');
+      host.innerHTML = pageSVG(h, levels[k], k, levels.length, lay, date);
+      const svg = host.querySelector('svg'); inlineStyles(svg, fonts);
+      await window.svg2pdf.svg2pdf(svg, doc, { x: 0, y: 0, width: PDF.W, height: PDF.H });
+    }
+  } finally { host.remove(); }
+  doc.setProperties({ title: `${h.name} – plans`, subject: 'Relevé de logement', creator: 'Home mapper' });
+  doc.save(`Plans - ${h.name.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'logement'}.pdf`);
+}
+$('#pdfBtn').addEventListener('click', async () => {
+  const b = $('#pdfBtn'); if (b.disabled) return;
+  b.disabled = true; b.textContent = 'Préparation du PDF…';
+  try { await exportPDF(house); toast('PDF exporté'); }
+  catch (e){ console.error(e); toast('Export PDF impossible : vérifiez la connexion internet'); }
+  finally { b.disabled = false; b.textContent = 'Exporter en PDF'; }
 });
 
 /* ---------- Navigation ---------- */
@@ -1065,6 +1260,7 @@ function renderHouse(){
   $('#houseEditPanel').classList.toggle('hidden', !houseEditing || arranging);
   $('#sharedPanel').classList.toggle('hidden', !h.shared);
   $('#shareBtn').classList.toggle('hidden', !all.length);
+  $('#pdfBtn').classList.toggle('hidden', !all.length);
   $('#houseStatus').textContent = h.shared ? 'Les modifications faites ici sont conservées si vous importez le logement.'
     : h.demo ? 'Logement d’exemple : changez de niveau, ouvrez une pièce ou essayez les outils de l’Éditeur.'
     : arSupported ? `« Relevé RA » relève le niveau affiché (${lvl.name.toLowerCase()}). Si vous changez d’étage pendant le relevé, les pièces sont rangées au bon niveau automatiquement.`
@@ -1179,7 +1375,7 @@ function openRoom(r){
   renderRoom(); show('#room');
 }
 let placing = null, selItem = null;
-let editing = false, editAng = null, selCorner = null, rdrag = null, editHistory = [];
+let editing = false, selCorner = null, rdrag = null, editHistory = [];
 // Annulation : instantané de la pièce avant chaque modification
 function snapshot(){
   editHistory.push(JSON.stringify({ pts: roomRef.pts, items: roomRef.items || [] }));
@@ -1193,7 +1389,6 @@ function undoEdit(){
 }
 function setEditing(v){
   editing = v; selCorner = null; rdrag = null;
-  editAng = v ? -longestAngle(roomRef.pts) : null;
   if (v) setPlacing(null);
   renderRoom();
 }
@@ -1247,14 +1442,15 @@ $('#roomPlan').addEventListener('click', e => {
 
 /* Édition du plan : glisser coins et éléments, « + » pour ajouter un coin */
 // Aligne le coin sur ses voisins (murs d'équerre) quand il en est proche à l'écran
-function snapCorner(p, k, q, f){
-  const n = p.length, v = rotPts([q], f.ang)[0], tol = 10 / f.S;
+// dans les axes propres de la pièce (son mur le plus long), même si elle est tournée sur le plan
+function snapCorner(p, k, q, f, axis){
+  const n = p.length, v = rotPts([q], axis)[0], tol = 10 / f.S;
   [p[(k-1+n)%n], p[(k+1)%n]].forEach(nb => {
-    const w = rotPts([nb], f.ang)[0];
+    const w = rotPts([nb], axis)[0];
     if (Math.abs(v[0]-w[0]) < tol) v[0] = w[0];
     if (Math.abs(v[1]-w[1]) < tol) v[1] = w[1];
   });
-  return rotPts([v], -f.ang)[0];
+  return rotPts([v], -axis)[0];
 }
 function movedItem(p, it, dx, dy){
   if (it.kind === 'device'){ const q = devicePos(p, it); return anchorDevice(p, it, [q[0]+dx, q[1]+dy]); }
@@ -1278,7 +1474,7 @@ $('#roomPlan').addEventListener('pointerdown', e => {
   } else if (t.dataset.corner != null) corner = +t.dataset.corner;
   selCorner = corner; selItem = corner == null ? t.dataset.item : null;
   rdrag = { frame, corner, item: selItem, start: roomToMeters(svg, e), moved: false, changed: inserted,
-            pts: r.pts.map(q => q.slice()), items: (r.items || []).map(i => ({ ...i })) };
+            pts: r.pts.map(q => q.slice()), items: (r.items || []).map(i => ({ ...i })), axis: -longestAngle(r.pts) };
   $('#roomPlan').setPointerCapture(e.pointerId);
   renderRoom();
 });
@@ -1291,7 +1487,7 @@ $('#roomPlan').addEventListener('pointermove', e => {
   const r = roomRef;
   if (rdrag.corner != null){
     const c = rdrag.pts[rdrag.corner], np = rdrag.pts.map(v => v.slice());
-    np[rdrag.corner] = snapCorner(np, rdrag.corner, [c[0]+dx, c[1]+dy], rdrag.frame);
+    np[rdrag.corner] = snapCorner(np, rdrag.corner, [c[0]+dx, c[1]+dy], rdrag.frame, rdrag.axis);
     r.pts = np; r.items = remapItems(rdrag.pts, np, rdrag.items);
   } else {
     r.items = rdrag.items.map(it => it.id === rdrag.item ? movedItem(rdrag.pts, it, dx, dy) : it);
@@ -1353,7 +1549,7 @@ $('#itemList').addEventListener('change', e => {
 });
 function renderRoom(){
   const r = roomRef, p = r.pts, h = r.height || 0, A = area(p), P = perimeter(p);
-  const out = roomSVG(r, { sel: selItem, edit: editing, selCorner, ang: editing ? editAng : null, frame: rdrag ? rdrag.frame : null });
+  const out = roomSVG(r, { sel: selItem, edit: editing, selCorner, frame: rdrag ? rdrag.frame : null });
   $('#roomPlan').innerHTML = out.svg; $('#roomPlan')._tf = out.tf;
   $('#roomPlan').classList.toggle('editing', editing);
   $('#editPanel').classList.toggle('hidden', !editing);
