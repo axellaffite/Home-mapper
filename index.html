@@ -110,6 +110,25 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 }
 .toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:999px;font-weight:500;z-index:30;transition:opacity .2s;max-width:90vw;text-align:center}
 
+/* Zoom des plans */
+.stage{position:relative}
+.zoom{position:absolute;top:10px;right:10px;z-index:2;display:flex;flex-direction:column;gap:4px}
+.zoom button{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:8px;background:var(--sheet);color:var(--ink);font:600 22px/1 Barlow,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.zoom svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.sheet svg{-webkit-user-select:none;user-select:none}
+.sheet.zoomed svg{cursor:grab}
+/* Grand écran : plan sur toute la hauteur, panneau latéral à droite */
+@media (min-width:1024px){
+  .wrap.screen{max-width:none;height:100vh;padding:18px 24px;display:grid;grid-template-columns:minmax(0,1fr) 380px;grid-template-rows:auto minmax(0,1fr);column-gap:24px}
+  .screen .head{grid-column:2;grid-row:1;min-width:0}
+  .screen .stage{grid-column:1;grid-row:1 / 3;min-height:0;display:flex}
+  .screen .stage .sheet{flex:1;position:relative;overflow:hidden}
+  .screen .stage .sheet svg{width:100%;height:100%;min-width:0}
+  .screen .stage .sheet .emptyplan{position:absolute;left:0;right:0;bottom:16px}
+  .screen .sidebar{grid-column:2;grid-row:2;min-height:0;overflow-y:auto;padding:0 6px 24px 0}
+  .screen .name{font-size:28px;margin-bottom:10px}
+  .screen .sidebar h2{margin-top:24px}
+}
 /* Export PDF : rendu hors écran, couleurs d'impression */
 .print-theme{--paper:#fff;--sheet:#fff;--ink:#111;--ink-soft:#555;--line:#999;--grid:#ddd;--laser:#111;--fill:none;--elec:#1D4F91;position:fixed;left:-10000px;top:0;width:1123px;height:794px;overflow:hidden}
 .print-theme .rn,.print-theme .ra{stroke:none}
@@ -255,7 +274,8 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 </main>
 
 <!-- LOGEMENT -->
-<main id="house" class="wrap hidden">
+<main id="house" class="wrap screen hidden">
+ <div class="head">
   <button class="back" id="houseBack">Mes logements</button>
   <input class="name" id="houseName" aria-label="Nom du logement">
   <div class="arrange hidden" id="sharedPanel" style="margin:0 0 14px">
@@ -268,7 +288,15 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
     <button class="mini" id="addUpBtn">Ajouter un étage</button>
     <button class="mini" id="addDownBtn">Ajouter un sous-sol</button>
   </div>
+ </div>
+ <div class="stage">
   <div class="sheet" id="housePlan"></div>
+  <div class="zoom" data-for="housePlan" role="group" aria-label="Zoom">
+      <button data-z="in" aria-label="Zoomer">+</button><button data-z="out" aria-label="Dézoomer">−</button>
+      <button data-z="fit" aria-label="Recadrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
+    </div>
+ </div>
+ <div class="sidebar">
   <div class="toolbar" id="houseTools">
     <label class="chk"><input type="checkbox" id="dimsChk"> Cotes</label>
     <label class="chk"><input type="checkbox" id="elecChk" checked> Électricité</label>
@@ -305,13 +333,23 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
     <button class="btn-danger" id="delLevel">Supprimer ce niveau</button>
     <button class="btn-danger" id="delHouse">Supprimer ce logement</button>
   </div>
+ </div>
 </main>
 
 <!-- PIÈCE -->
-<main id="room" class="wrap hidden">
+<main id="room" class="wrap screen hidden">
+ <div class="head">
   <button class="back" id="roomBack">Retour au logement</button>
   <input class="name" id="roomName" aria-label="Nom de la pièce">
+ </div>
+ <div class="stage">
   <div class="sheet" id="roomPlan"></div>
+  <div class="zoom" data-for="roomPlan" role="group" aria-label="Zoom">
+      <button data-z="in" aria-label="Zoomer">+</button><button data-z="out" aria-label="Dézoomer">−</button>
+      <button data-z="fit" aria-label="Recadrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
+    </div>
+ </div>
+ <div class="sidebar">
   <div class="toolbar">
     <button class="btn btn-ghost" id="editBtn">Modifier le plan</button>
     <button class="mini" id="undoEdit" disabled>Annuler la dernière modification</button>
@@ -340,6 +378,7 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
     <button class="btn btn-ghost" id="copyBtn">Copier les mesures</button>
   </div>
   <button class="btn-danger" id="delRoom">Supprimer cette pièce</button>
+ </div>
 </main>
 
 <!-- OVERLAY AR -->
@@ -676,9 +715,15 @@ const itemLabel = it => ((it.kind === 'opening' ? OPENINGS : DEVICES)[it.type] |
 
 /* Plan d'une pièce seule (orientée sur son mur le plus long) */
 // o.ang fige l'orientation, o.frame tout le cadrage (pendant un glisser en édition)
-function roomFrame(raw, ang, pad){
+// box (grand écran) : le dessin prend les proportions de la zone, une unité SVG valant un pixel
+function roomFrame(raw, ang, pad, box){
   const [x0,y0,x1,y1] = bbox([rotPts(raw, ang)]);
-  const w=Math.max(x1-x0,.5), h=Math.max(y1-y0,.5), S=320/Math.max(w,h);
+  const w=Math.max(x1-x0,.5), h=Math.max(y1-y0,.5);
+  if (box){
+    const S = Math.min((box.w - 2*pad)/w, (box.h - 2*pad)/h);
+    return { ang, x0: x0 - ((box.w - 2*pad)/S - w)/2, y0: y0 - ((box.h - 2*pad)/S - h)/2, S, pad, W: box.w, H: box.h };
+  }
+  const S=320/Math.max(w,h);
   return { ang, x0, y0, S, pad, W: w*S+pad*2, H: h*S+pad*2 };
 }
 function editHandles(p, pts, selCorner){
@@ -732,7 +777,7 @@ function measureSVG(room, id, guides, V, ang){
 }
 function roomSVG(room, o = {}){
   const raw = room.pts;
-  const f = o.frame || roomFrame(raw, 0, o.edit ? 60 : 46); // orientation du plan du logement
+  const f = o.frame || roomFrame(raw, 0, o.edit ? 60 : 46, o.box); // orientation du plan du logement
   const { ang, x0, y0, S, pad, W, H } = f, p = rotPts(raw, ang);
   const T=([x,y])=>[(x-x0)*S+pad,(y-y0)*S+pad];
   const pts=p.map(T), poly=pts.map(q=>q.map(v=>v.toFixed(1)).join(',')).join(' ');
@@ -760,10 +805,14 @@ function roomSVG(room, o = {}){
 }
 
 /* Plan du logement */
-function makeView(rooms, margin = 0.6){
+function makeView(rooms, margin = 0.6, box = null){
   const [x0,y0,x1,y1] = bbox(rooms.map(r=>r.pts));
-  const minX=x0-margin, minY=y0-margin, w=Math.max(x1-x0+2*margin,1), h=Math.max(y1-y0+2*margin,1);
-  const S=520/Math.max(w,h), pad=10;
+  const minX=x0-margin, minY=y0-margin, w=Math.max(x1-x0+2*margin,1), h=Math.max(y1-y0+2*margin,1), pad=10;
+  if (box){
+    const S = Math.min((box.w - 2*pad)/w, (box.h - 2*pad - 22)/h);
+    return { S, minX: minX - ((box.w - 2*pad)/S - w)/2, minY: minY - ((box.h - 2*pad - 22)/S - h)/2, pad, W: box.w, H: box.h };
+  }
+  const S=520/Math.max(w,h);
   return { S, minX, minY, pad, W:w*S+2*pad, H:h*S+2*pad+22 };
 }
 function roomColor(i, a){ const c=PALETTE[i%PALETTE.length]; return a==null ? `rgb(${c})` : `rgba(${c},${a})`; }
@@ -985,6 +1034,109 @@ function addSessionRooms(h, list){
   persist();
   return separate;
 }
+
+/* ---------- Grand écran et zoom des plans ---------- */
+const wideMQ = matchMedia('(min-width:1024px)');
+// Taille en pixels de la zone du plan sur grand écran ; null sur mobile (cadrage par défaut)
+function planBox(el){
+  if (!wideMQ.matches || !el.offsetParent) return null;
+  const w = el.clientWidth - 12, h = el.clientHeight - 12;
+  return w > 120 && h > 120 ? { w: Math.round(w), h: Math.round(h) } : null;
+}
+function refreshPlans(){
+  if (rdrag || drag) return;
+  if (visible('#house') && house) renderHouse(); else if (visible('#room') && roomRef) renderRoom();
+}
+let resizeT = null;
+addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(refreshPlans, 150); });
+wideMQ.addEventListener('change', () => refreshPlans());
+
+// Le zoom est mémorisé en mètres (centre) : il survit aux redessins et aux recadrages
+const ZOOM = { max: 8, step: 1.5 };
+const u2m = (mp, u) => [(u[0] - mp.pad)/mp.S + mp.ox, (u[1] - mp.pad)/mp.S + mp.oy];
+const m2u = (mp, m) => [(m[0] - mp.ox)*mp.S + mp.pad, (m[1] - mp.oy)*mp.S + mp.pad];
+const baseVB = svg => svg._vb || (svg._vb = svg.getAttribute('viewBox').trim().split(/\s+/).map(Number));
+function applyZoom(el){
+  const svg = el.querySelector('svg'), mp = el._map; if (!svg || !mp) return;
+  const [vx, vy, W, H] = baseVB(svg), zs = el._zoom;
+  el.classList.toggle('zoomed', !!zs);
+  if (!zs){ svg.setAttribute('viewBox', `${vx} ${vy} ${W} ${H}`); return; }
+  const w = W / zs.z, h = H / zs.z;
+  let [cx, cy] = m2u(mp, zs.m);
+  cx = Math.min(Math.max(cx, vx + w/2), vx + W - w/2); cy = Math.min(Math.max(cy, vy + h/2), vy + H - h/2);
+  zs.m = u2m(mp, [cx, cy]);
+  svg.setAttribute('viewBox', `${(cx - w/2).toFixed(2)} ${(cy - h/2).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}`);
+}
+function clientToMeters(el, x, y){
+  const svg = el.querySelector('svg'), pt = svg.createSVGPoint(); pt.x = x; pt.y = y;
+  const u = pt.matrixTransform(svg.getScreenCTM().inverse());
+  return u2m(el._map, [u.x, u.y]);
+}
+// Zoom de facteur f autour d'un point de l'écran (le point reste sous le curseur), ou du centre
+function zoomAt(el, f, x, y){
+  const svg = el.querySelector('svg'); if (!svg || !el._map) return;
+  const [vx, vy, W, H] = baseVB(svg), z0 = el._zoom ? el._zoom.z : 1, z = Math.min(ZOOM.max, Math.max(1, z0 * f));
+  if (z <= 1.001){ el._zoom = null; applyZoom(el); return; }
+  const c0 = el._zoom ? el._zoom.m : u2m(el._map, [vx + W/2, vy + H/2]);
+  const p = x == null ? c0 : clientToMeters(el, x, y);
+  el._zoom = { z, m: [p[0] + (c0[0] - p[0]) * z0/z, p[1] + (c0[1] - p[1]) * z0/z] };
+  applyZoom(el);
+}
+function panBy(el, from, to){
+  if (!el._zoom || !el.querySelector('svg')) return;
+  const a = clientToMeters(el, from[0], from[1]), b = clientToMeters(el, to[0], to[1]);
+  el._zoom.m = [el._zoom.m[0] - (b[0] - a[0]), el._zoom.m[1] - (b[1] - a[1])];
+  applyZoom(el);
+}
+/* Molette ou pincement de pavé tactile, pincement à deux doigts, glisser dans le vide pour se déplacer.
+   isHandle : cibles qui gardent leur propre glisser ; onPinch : annule un glisser en cours */
+function attachZoom(el, isHandle, onPinch){
+  el.addEventListener('wheel', e => {
+    if (!el._map || !el.querySelector('svg')) return;
+    if (!wideMQ.matches && !e.ctrlKey) return; // page défilante : la molette seule fait défiler
+    e.preventDefault();
+    zoomAt(el, Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), e.clientX, e.clientY);
+  }, { passive: false });
+  const pts = new Map(); let pinch = null, pan = null;
+  const mid = () => { const [a, b] = [...pts.values()]; return [(a[0] + b[0])/2, (a[1] + b[1])/2, Math.hypot(b[0] - a[0], b[1] - a[1])]; };
+  el.addEventListener('pointerdown', e => {
+    if (!el._map) return;
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 2){
+      onPinch(); pan = null; pinch = mid();
+      e.stopImmediatePropagation(); e.preventDefault(); return;
+    }
+    if (pts.size === 1 && !isHandle(e.target)) pan = { id: e.pointerId, last: [e.clientX, e.clientY], from: [e.clientX, e.clientY], moved: false };
+  }, true);
+  el.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && pts.size >= 2){
+      const m = mid(); zoomAt(el, m[2] / (pinch[2] || 1), m[0], m[1]); panBy(el, pinch, m); pinch = m;
+      e.stopImmediatePropagation(); return;
+    }
+    if (pan && pan.id === e.pointerId){
+      const cur = [e.clientX, e.clientY];
+      if (!pan.moved && Math.hypot(cur[0] - pan.from[0], cur[1] - pan.from[1]) > 5){ pan.moved = true; try { el.setPointerCapture(e.pointerId); } catch (_){ } }
+      if (pan.moved){ panBy(el, pan.last, cur); e.stopImmediatePropagation(); }
+      pan.last = cur;
+    }
+  }, true);
+  const up = e => {
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = null;
+    if (pan && pan.id === e.pointerId){ if (pan.moved) el._noClick = true; pan = null; }
+  };
+  el.addEventListener('pointerup', up, true);
+  el.addEventListener('pointercancel', up, true);
+  // un déplacement de la vue n'est pas un clic (ouvrir une pièce, placer un élément…)
+  el.addEventListener('click', e => { if (el._noClick){ el._noClick = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
+}
+document.querySelectorAll('.zoom').forEach(g => g.addEventListener('click', e => {
+  const b = e.target.closest('[data-z]'), el = document.getElementById(g.dataset.for); if (!b || !el._map) return;
+  if (b.dataset.z === 'fit'){ el._zoom = null; applyZoom(el); }
+  else zoomAt(el, b.dataset.z === 'in' ? ZOOM.step : 1 / ZOOM.step);
+}));
 
 /* ---------- Partage par lien ---------- */
 // Le logement voyage compressé dans le fragment (#s=…) : il n'est jamais envoyé à un serveur
@@ -1280,6 +1432,7 @@ function show(id){
   ['#home','#house','#room'].forEach(s => $(s).classList.toggle('hidden', s !== id));
   window.scrollTo(0,0);
   renderNav();
+  if (wideMQ.matches) refreshPlans(); // le cadrage dépend de la taille réelle de la zone
 }
 const visible = id => !$(id).classList.contains('hidden');
 // Mode courant : la liste, le plan (logement ou pièce consultée) ou l'éditeur
@@ -1373,7 +1526,7 @@ function renderDraft(){
 
 /* Logement */
 let arranging = false, selIdx = null, aView = null, drag = null, houseEditing = false;
-function openHouse(h){ house = ensureLevels(h); arranging = false; houseEditing = false; selIdx = null; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); }
+function openHouse(h){ $('#housePlan')._zoom = null; house = ensureLevels(h); arranging = false; houseEditing = false; selIdx = null; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); }
 function renderHouse(){
   const h = ensureLevels(house), all = h.rooms, lvl = curLevel(h);
   const rooms = levelRooms(h);
@@ -1385,14 +1538,16 @@ function renderHouse(){
   if (document.activeElement !== $('#levelName')) $('#levelName').value = lvl.name;
   const plan = $('#housePlan');
   plan.classList.toggle('arranging', arranging);
+  plan.classList.toggle('editing', houseEditing && !arranging);
   if (!all.length){
     plan.innerHTML = '<div class="emptyplan">Aucune pièce relevée. Lancez un relevé ou dessinez une pièce pour commencer le plan.</div>';
   } else {
     // Même cadrage pour tous les niveaux : les étages se superposent quand on change d'onglet
-    const v = arranging ? (aView || (aView = makeView(all, 3))) : makeView(all);
+    const box = planBox(plan), v = arranging ? (aView || (aView = makeView(all, 3, box))) : makeView(all, 0.6, box);
     const opts = { id:'hsvg', house: h, badges: houseEditing && !arranging, level: lvl.id, ghost: arranging || !rooms.length, dims: $('#dimsChk').checked && !arranging, elec: $('#elecChk').checked, sel: arranging ? movingSet() : null };
     plan.innerHTML = houseSVG(all, v, opts);
     plan._view = v; plan._opts = opts;
+    plan._map = { S: v.S, pad: v.pad, ox: v.minX, oy: v.minY }; applyZoom(plan);
     if (!rooms.length) plan.insertAdjacentHTML('beforeend', '<div class="emptyplan">Aucune pièce sur ce niveau. Les pointillés montrent les autres niveaux.</div>');
   }
   $('#houseTools').classList.toggle('hidden', arranging || !all.length);
@@ -1430,7 +1585,7 @@ function renderHouse(){
 }
 $('#levelTabs').addEventListener('click', e => {
   const b = e.target.closest('[data-l]'); if (!b) return;
-  house.curLevel = b.dataset.l; selIdx = null; save(); renderHouse();
+  house.curLevel = b.dataset.l; selIdx = null; $('#housePlan')._zoom = null; save(); renderHouse();
 });
 $('#levelName').addEventListener('input', e => { const l = curLevel(house); l.name = e.target.value || levelLabel(l.order); save(); renderHouse(); });
 function addLevel(dir){
@@ -1624,6 +1779,7 @@ $('#housePlan').addEventListener('pointercancel', endDrag);
 
 /* Pièce */
 function openRoom(r){
+  $('#roomPlan')._zoom = null;
   roomRef = r; selItem = null; editing = false; selCorner = null; rdrag = null; editHistory = []; setPlacing(null);
   $('#roomName').value = r.name;
   $('#heightIn').value = (r.height || 2.5).toFixed(2);
@@ -1778,6 +1934,11 @@ const endRoomDrag = () => {
 };
 $('#roomPlan').addEventListener('pointerup', endRoomDrag);
 $('#roomPlan').addEventListener('pointercancel', endRoomDrag);
+// Zoom : coins, « + » et éléments gardent leur glisser en édition ; un pincement annule le glisser en cours
+attachZoom($('#roomPlan'), t => editing && !placing && !!t.closest('[data-corner],[data-mid],[data-item]'),
+  () => { if (rdrag){ rdrag = null; undoEdit(); } });
+attachZoom($('#housePlan'), t => arranging && !!t.closest('[data-i]'),
+  () => { if (drag){ drag.idx.forEach((ri, k) => { house.rooms[ri].pts = drag.orig[k]; }); drag = null; renderHouse(); } });
 function renderItems(){
   const r = roomRef, p = r.pts, items = r.items || [];
   if (!items.length){ $('#itemList').innerHTML = '<li class="empty">Aucun élément. Ajoutez-en pendant le relevé en réalité augmentée, ou placez-les sur le plan ci-dessus.</li>'; return; }
@@ -1827,9 +1988,10 @@ $('#itemList').addEventListener('change', e => {
 });
 function renderRoom(){
   const r = roomRef, p = r.pts, h = r.height || 0, A = area(p), P = perimeter(p);
-  const out = roomSVG(r, { sel: selItem, edit: editing, selCorner, frame: rdrag ? rdrag.frame : null,
+  const out = roomSVG(r, { sel: selItem, edit: editing, selCorner, frame: rdrag ? rdrag.frame : null, box: planBox($('#roomPlan')),
                             measure: editing ? selItem : null, guides: rdrag && rdrag.guides });
   $('#roomPlan').innerHTML = out.svg; $('#roomPlan')._tf = out.tf;
+  $('#roomPlan')._map = { S: out.tf.S, pad: out.tf.pad, ox: out.tf.x0, oy: out.tf.y0 }; applyZoom($('#roomPlan'));
   $('#roomPlan').classList.toggle('editing', editing);
   $('#editPanel').classList.toggle('hidden', !editing);
   $('#editBtn').classList.toggle('hidden', editing);

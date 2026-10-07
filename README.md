@@ -13,7 +13,7 @@ Map your home in augmented reality, right from your phone's browser: point at th
 - **Multiple floors**: floors are detected from height changes when you take the stairs, and stay aligned with each other.
 - **Doors and windows**: door, double door, sliding door, window, French window, sliding bay. Swing direction and hinge side can be inverted afterwards.
 - **Electrical devices** with standard French floor-plan symbols: ceiling light, recessed spot, wall light, 16 A and 32 A outlets, switch, two-way switch, RJ45, TV outlet, smoke detector, electrical panel.
-- **Manual plan editor**: drag corners (they snap square to their neighbours), add or remove corners, type exact wall lengths, move doors, windows and devices on the plan, with undo. Rooms can also be drawn by hand, without AR.
+- **Manual plan editor** (zoom with wheel, pinch or buttons; full-height plan with a side panel on wide screens): drag corners (they snap square to their neighbours), add or remove corners, type exact wall lengths, move doors, windows and devices on the plan, with undo. Rooms can also be drawn by hand, without AR.
 - **PDF export**: one A4 sheet per floor at a standard scale (1:50, 1:75, 1:100…), with dimensions, title block, room area table and electrical legend.
 - **Share by link**: the whole house is compressed into the link itself (after the `#`, never sent to a server); the recipient previews it and can import it.
 - **Robust tracking**: world anchors, tracking-loss detection, smoothed target, and manual realignment after a tracking jump.
