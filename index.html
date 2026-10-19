@@ -164,7 +164,7 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 }
 /* Export PDF : rendu hors écran, couleurs d'impression */
 .print-theme{--table:#fff;--sheet:#fff;--ink:#111;--ink-soft:#555;--hair:#999;--construct:#999;--grid:#ddd;--pencil:#111;--wash:none;--pencil-wash:none;--elec:#1D4F91;--on-ink:#fff;position:fixed;left:-10000px;top:0;width:1123px;height:794px;overflow:hidden}
-.print-theme .rn,.print-theme .ra{stroke:none}
+.print-theme .rn,.print-theme .ra,.print-theme .dev text.ctag{stroke:none}
 .print-theme .joint{fill:#111;opacity:1}
 /* Menu contextuel du plan */
 .ctx{position:fixed;z-index:40;min-width:240px;max-width:calc(100vw - 16px);background:var(--sheet);border:1px solid var(--ink);border-radius:var(--r0);box-shadow:var(--stack-ink);padding:var(--s1);animation:panel-in var(--t-base) var(--e-draw) both}
@@ -184,6 +184,17 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 .joints .jt b{display:block;font-weight:600}
 .joints .jt span{font-size:var(--fs-note);color:var(--ink-soft)}
 .joints li.off .jt{opacity:.55}
+/* Compteur et circuits : seconde encre, l'électricité */
+.dev text.ctag{font:600 8px var(--f-letter);letter-spacing:.02em;paint-order:stroke;stroke:var(--sheet);stroke-width:2.5px;stroke-linejoin:round}
+.wire{fill:none;stroke:var(--pencil);stroke-width:1.4;stroke-dasharray:5 3;stroke-linejoin:round}
+.circuits li{flex-wrap:wrap;gap:6px 10px}
+.circuits li.on{background:var(--pencil-wash);box-shadow:calc(var(--s2) * -1) 0 0 var(--pencil-wash),var(--s2) 0 0 var(--pencil-wash)}
+.circuits .cn{flex:none;min-width:34px;height:28px;border:1px solid var(--elec);border-radius:var(--r1);background:transparent;color:var(--elec);font:600 14px var(--f-letter);font-variant-numeric:tabular-nums;padding:0 var(--s1)}
+.circuits li.on .cn{background:var(--pencil);border-color:var(--pencil);color:var(--on-ink)}
+.circuits .cname{flex:1 1 140px;min-width:0;font:600 var(--fs-body) var(--f-text);color:var(--ink);background:transparent;border:0;border-bottom:1px dashed var(--ink-soft);border-radius:0;padding:var(--s1) 0;min-height:40px}
+.circuits .cname:focus-visible{outline:none;border-bottom:2px solid var(--pencil)}
+.circuits .cinfo{flex-basis:100%;padding-left:44px;font-size:var(--fs-note);color:var(--ink-soft)}
+.num-in select,.circuits select{font:500 15px var(--f-text);padding:0 var(--s2);min-height:40px;max-width:230px;border:1px solid var(--ink-soft);border-radius:var(--r1);background:var(--sheet);color:var(--ink)}
 @media (min-width:900px){ .toast{bottom:calc(24px + env(safe-area-inset-bottom,0px));margin-left:calc(var(--nav-w) / -2)} }
 
 /* Overlay RA : panneaux givrés sur l'image de la caméra uniquement */
@@ -386,6 +397,12 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
     <button class="btn btn-ghost" id="pdfBtn">Exporter en PDF</button>
     <button class="btn btn-ghost" id="shareBtn">Partager par lien</button>
   </div>
+  <section id="circuitPanel">
+    <h2>Compteur et circuits</h2>
+    <p class="status" id="meterStatus" style="margin-top:0"></p>
+    <ul class="list circuits" id="circuitList"></ul>
+    <div class="row"><button class="btn btn-ghost" id="addCircuit">Ajouter un circuit</button></div>
+  </section>
   <h2>Pièces</h2>
   <ul class="list" id="roomList"></ul>
   <div class="row" style="justify-content:space-between">
@@ -577,19 +594,41 @@ function gridLines(minX, minY, maxX, maxY, S, pad, W, H){
 }
 
 /* ---------- Ouvertures et électricité ---------- */
+// circ : famille de circuit des appareils raccordés au compteur (absente pour le courant faible)
 const DEVICES = {
-  plafonnier: { label: 'Point lumineux', wall: false },
-  spot:       { label: 'Spot encastré', wall: false },
-  applique:   { label: 'Applique', wall: true },
-  prise:      { label: 'Prise 16 A', wall: true },
-  prise32:    { label: 'Prise 32 A', wall: true },
-  inter:      { label: 'Interrupteur', wall: true },
-  vav:        { label: 'Va-et-vient', wall: true },
+  plafonnier: { label: 'Point lumineux', wall: false, circ: 'light' },
+  spot:       { label: 'Spot encastré', wall: false, circ: 'light' },
+  applique:   { label: 'Applique', wall: true, circ: 'light' },
+  prise:      { label: 'Prise 16 A', wall: true, circ: 'plug' },
+  prise32:    { label: 'Prise 32 A', wall: true, circ: 'power' },
+  inter:      { label: 'Interrupteur', wall: true, circ: 'light' },
+  vav:        { label: 'Va-et-vient', wall: true, circ: 'light' },
   rj45:       { label: 'Prise RJ45', wall: true },
   tv:         { label: 'Prise TV', wall: true },
-  detecteur:  { label: 'Détecteur de fumée', wall: false },
-  tableau:    { label: 'Tableau électrique', wall: true }
+  detecteur:  { label: 'Détecteur de fumée', wall: false, circ: 'alarm' },
+  tableau:    { label: 'Tableau électrique', wall: true },
+  compteur:   { label: 'Compteur électrique', wall: true }
 };
+/* Circuits : partent du compteur, regroupent des appareils de plusieurs pièces et niveaux */
+const CIRCUIT_KINDS = {
+  light: { name: 'Éclairage', amps: 10 }, plug: { name: 'Prises', amps: 16 },
+  power: { name: 'Circuit spécialisé', amps: 32 }, alarm: { name: 'Détecteurs', amps: 2 }
+};
+const AMPS = [2, 10, 16, 20, 32, 40];
+const CIRCUIT_MAX = { count: 99, name: 40 };
+const isWired = it => it.kind === 'device' && !!(DEVICES[it.type] && DEVICES[it.type].circ);
+// Repères C1, C2… dans l'ordre de la liste des circuits
+const circuitTags = h => new Map((h.circuits || []).map((c, i) => [c.id, 'C' + (i + 1)]));
+const circuitDevices = (h, id) => h.rooms.flatMap(r => (r.items || []).filter(it => isWired(it) && it.circuit === id).map(it => ({ room: r, it })));
+// Premier compteur posé, sur le niveau donné ou dans tout le logement
+function findMeter(h, levelId){
+  for (const r of h.rooms){
+    if (levelId && r.levelId !== levelId) continue;
+    const it = (r.items || []).find(i => i.kind === 'device' && i.type === 'compteur' && i.wall < r.pts.length);
+    if (it) return { room: r, it };
+  }
+  return null;
+}
 const OPENINGS = {
   porte:       { label: 'Porte', w: 0.83 },
   porte2:      { label: 'Porte double', w: 1.40 },
@@ -697,6 +736,7 @@ function symbol(type, th = 0){
     case 'inter':      return '<circle cx="0" cy="8" r="3.5"/><path d="M2.5 10.5 L9 17 L12 14"/>';
     case 'vav':        return '<circle cx="0" cy="8" r="3.5"/><path d="M2.5 10.5 L9 17 L12 14 M-2.5 10.5 L-9 17 L-12 14"/>';
     case 'tableau':    return '<rect x="-10" y="0" width="20" height="8"/><path class="f" d="M-10 8 L10 0 L10 8 Z"/>';
+    case 'compteur':   return '<rect x="-10" y="0" width="20" height="12"/>' + tx(8.6, 'kWh');
   }
   return '<circle r="5"/>';
 }
@@ -705,13 +745,16 @@ function deviceIcon(type){
     ? `<svg class="icon" viewBox="-14 -3 28 26" aria-hidden="true"><line class="w" x1="-14" y1="0" x2="14" y2="0"/><g class="dev">${symbol(type)}</g></svg>`
     : `<svg class="icon" viewBox="-11 -11 22 22" aria-hidden="true"><g class="dev">${symbol(type)}</g></svg>`;
 }
-function deviceSVG(p, it, T, k = 1, sel = false, hit = false){
+// tag : repère du circuit, posé côté pièce (muraux) ou en haut à droite (plafond), toujours lisible à l'endroit
+function deviceSVG(p, it, T, k = 1, sel = false, hit = false, tag = ''){
   if (!(it.wall < p.length)) return '';
   const def = DEVICES[it.type] || {}, [X, Y] = T(devicePos(p, it));
   let th = 0;
   if (def.wall){ const n = inwardNormal(p, it.wall); th = Math.atan2(-n[0], n[1]) * 180 / Math.PI; }
   const h = hit ? `<circle class="dhit" cy="${def.wall ? 9 : 0}" r="12"/>` : '';
-  return `<g class="dev${sel ? ' sel' : ''}" data-item="${it.id}" transform="translate(${X.toFixed(1)} ${Y.toFixed(1)}) rotate(${th.toFixed(1)}) scale(${k})">${h}${symbol(it.type, th)}</g>`;
+  const [tx, ty, anchor] = def.wall ? [0, 26, 'middle'] : [8, -6, 'start'];
+  const t = tag ? `<text class="ctag" x="${tx}" y="${ty}" text-anchor="${anchor}" transform="rotate(${(-th).toFixed(1)} ${tx} ${ty - 2.5})">${tag}</text>` : '';
+  return `<g class="dev${sel ? ' sel' : ''}" data-item="${it.id}" transform="translate(${X.toFixed(1)} ${Y.toFixed(1)}) rotate(${th.toFixed(1)}) scale(${k})">${h}${symbol(it.type, th)}${t}</g>`;
 }
 // Portes et fenêtres : coupure du mur + vantaux et débattements
 function openingSVG(p, it, T, S, sel = false, hit = false){
@@ -762,10 +805,26 @@ function openingSVG(p, it, T, S, sel = false, hit = false){
 function itemsSVG(p, items, T, S, o = {}){
   if (!items || !items.length) return '';
   let s = '';
-  const isSel = it => o.sel != null && o.sel === it.id;
+  // o.tags : repères des circuits ; o.hot : circuit mis en évidence
+  const isSel = it => (o.sel != null && o.sel === it.id) || (o.hot != null && it.circuit === o.hot);
+  const tag = it => (o.tags && it.circuit && o.tags.get(it.circuit)) || '';
   items.forEach(it => { if (it.kind === 'opening') s += openingSVG(p, it, T, S, isSel(it), o.hit); });
-  if (o.elec !== false) items.forEach(it => { if (it.kind === 'device') s += deviceSVG(p, it, T, o.k || 1, isSel(it), o.hit); });
+  if (o.elec !== false) items.forEach(it => { if (it.kind === 'device') s += deviceSVG(p, it, T, o.k || 1, isSel(it), o.hit, tag(it)); });
   return s;
+}
+/* Câblage d'un circuit sur un niveau : du compteur, chaque point rejoint le plus proche pas encore relié.
+   Un tracé de principe, pas le chemin réel des gaines */
+function wiresSVG(h, levelId, id, T){
+  const pts = circuitDevices(h, id).filter(d => d.room.levelId === levelId && d.it.wall < d.room.pts.length).map(d => devicePos(d.room.pts, d.it));
+  if (!pts.length) return '';
+  const m = findMeter(h, levelId);
+  let last = m ? devicePos(m.room.pts, m.it) : pts[0];
+  const path = [last], rest = m ? pts : pts.slice(1);
+  while (rest.length){
+    let bi = 0; rest.forEach((q, i) => { if (dist(q, last) < dist(rest[bi], last)) bi = i; });
+    last = rest.splice(bi, 1)[0]; path.push(last);
+  }
+  return path.length > 1 ? `<polyline class="wire" points="${path.map(q => T(q).map(v => v.toFixed(1)).join(',')).join(' ')}"/>` : '';
 }
 function openingIcon(it){
   const fake = [[0,0],[1,0],[1,1],[0,1]], T = ([x,y]) => [x*24+2, y*24+4];
@@ -858,7 +917,7 @@ function roomSVG(room, o = {}){
     ${gridLines(x0-pad/S, y0-pad/S, x0+(W-pad)/S, y0+(H-pad)/S, S, 0, W, H)}
     <polygon class="room" pathLength="1" style="fill:var(--wash)" points="${poly}"/>
     <g class="ink-top">${corners}${hd.mids}
-    ${itemsSVG(p, room.items, T, S, { sel: o.sel, k: 1.3, hit: true })}${lab}
+    ${itemsSVG(p, room.items, T, S, { sel: o.sel, k: 1.3, hit: true, tags: o.tags })}${lab}
     ${o.measure ? measureSVG(room, o.measure, o.guides || [], ([x, y]) => T(rotPts([[x, y]], ang)[0]), ang) : ''}
     ${hd.vtx}</g>
     <g class="scale"><line x1="${pad}" y1="${H-14}" x2="${pad+S}" y2="${H-14}"/><text x="${pad+S+6}" y="${H-14}" dominant-baseline="middle">1 m</text></g></svg>`;
@@ -977,6 +1036,7 @@ function jointsSVG(h, levelId, T, S, badges){
 }
 function houseLayer(rooms, v, opts){
   const T=([x,y])=>[(x-v.minX)*v.S+v.pad,(y-v.minY)*v.S+v.pad];
+  const tags = opts.house ? circuitTags(opts.house) : null, hot = opts.elec !== false ? opts.circuit : null;
   let polys='', labels='', items='', n=0;
   rooms.forEach((r,i) => {
     if (opts.level && r.levelId !== opts.level){
@@ -987,7 +1047,7 @@ function houseLayer(rooms, v, opts){
     const pts = r.pts.map(T).map(q=>q.map(n=>n.toFixed(1)).join(',')).join(' ');
     polys += `<polygon data-i="${i}" class="room${sel?' sel':''}" pathLength="1" style="fill:${opts.fill || (sel ? 'var(--pencil-wash)' : 'var(--wash)')};--i:${n++}" points="${pts}"/>`;
     if (opts.dims) labels += dimLabels(r.pts, T, 10);
-    items += itemsSVG(r.pts, r.items, T, v.S, { elec: opts.elec !== false });
+    items += itemsSVG(r.pts, r.items, T, v.S, { elec: opts.elec !== false, tags, hot });
     // Décale le nom si un luminaire est au même endroit
     let lp = labelPoint(r.pts);
     const ceil = (r.items||[]).filter(it => it.kind === 'device' && DEVICES[it.type] && !DEVICES[it.type].wall && it.wall < r.pts.length).map(it => devicePos(r.pts, it));
@@ -997,7 +1057,8 @@ function houseLayer(rooms, v, opts){
                <text x="${lx.toFixed(1)}" y="${(ly+14).toFixed(1)}" text-anchor="middle" class="ra" pointer-events="none">${fmt(area(r.pts),1)} m²</text>`;
   });
   const jt = opts.house ? jointsSVG(opts.house, opts.level, T, v.S, opts.badges) : '';
-  return polys + `<g class="ink-top" pointer-events="none">${jt}${items}${labels}</g>`;
+  const wires = hot && opts.house && opts.level ? wiresSVG(opts.house, opts.level, hot, T) : '';
+  return polys + `<g class="ink-top" pointer-events="none">${jt}${wires}${items}${labels}</g>`;
 }
 function houseSVG(rooms, v, opts = {}){
   return `<svg id="${opts.id||''}" viewBox="0 0 ${v.W.toFixed(0)} ${v.H.toFixed(0)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plan du logement">${SVG_STYLE}
@@ -1008,24 +1069,29 @@ function houseSVG(rooms, v, opts = {}){
 
 /* ---------- Données ---------- */
 const O = (type, wall, t0, t1, x = {}) => ({ kind:'opening', type, wall, t0, t1, swingOut:false, hingeEnd:false, ...x });
-const D = (type, wall, t, d = 0, h = null) => ({ kind:'device', type, wall, t, d, h });
+const D = (type, wall, t, d = 0, h = null, circuit = null) => ({ kind:'device', type, wall, t, d, h, circuit });
 const SAMPLE_ROOMS = [
   { name:'Salon', pts:[[0,0],[5.2,0],[5.2,4.1],[0,4.1]], items:[
     O('fenetre',0,.3,.53), O('pfenetre',3,.25,.6), O('porte',2,.1,.26),
-    D('plafonnier',0,.5,2.05), D('prise',3,.8,0,.3), D('prise',0,.12,0,.3), D('prise',1,.7,0,.3), D('tv',1,.3,0,.3), D('rj45',1,.38,0,.3), D('inter',2,.3,0,1.1) ] },
+    D('plafonnier',0,.5,2.05,null,'c1'), D('prise',3,.8,0,.3,'c2'), D('prise',0,.12,0,.3,'c2'), D('prise',1,.7,0,.3,'c2'), D('tv',1,.3,0,.3), D('rj45',1,.38,0,.3), D('inter',2,.3,0,1.1,'c1') ] },
   { name:'Cuisine', pts:[[5.35,0],[8.4,0],[8.4,4.1],[5.35,4.1]], items:[
     O('fenetre',0,.3,.69), O('porte',2,.65,.85,{hingeEnd:true}),
-    D('plafonnier',0,.5,2.05), D('prise32',1,.5,0,.15), D('prise',0,.12,0,1.1), D('prise',0,.88,0,1.1), D('inter',2,.6,0,1.1) ] },
+    D('plafonnier',0,.5,2.05,null,'c1'), D('prise32',1,.5,0,.15,'c4'), D('prise',0,.12,0,1.1,'c3'), D('prise',0,.88,0,1.1,'c3'), D('inter',2,.6,0,1.1,'c1') ] },
   { name:'Couloir', pts:[[0,4.25],[8.4,4.25],[8.4,5.35],[0,5.35]], items:[
-    O('porte',3,.12,.87), D('tableau',1,.5,0,1.4), D('detecteur',0,.5,.55), D('spot',0,.25,.55), D('spot',0,.75,.55), D('vav',3,.95,0,1.1), D('vav',1,.15,0,1.1) ] },
+    O('porte',3,.12,.87), D('tableau',1,.5,0,1.4), D('compteur',2,.94,0,1.6), D('detecteur',0,.5,.55,null,'c6'), D('spot',0,.25,.55,null,'c1'), D('spot',0,.75,.55,null,'c1'), D('vav',3,.95,0,1.1,'c1'), D('vav',1,.15,0,1.1,'c1') ] },
   { name:'Chambre', pts:[[0,5.5],[3.6,5.5],[3.6,8.9],[0,8.9]], items:[
     O('porte',0,.65,.88,{hingeEnd:true}), O('fenetre',2,.3,.63),
-    D('plafonnier',0,.5,1.7), D('prise',3,.3,0,.3), D('prise',3,.7,0,.3), D('prise',1,.5,0,.3), D('inter',0,.6,0,1.1) ] },
+    D('plafonnier',0,.5,1.7,null,'c1'), D('prise',3,.3,0,.3,'c5'), D('prise',3,.7,0,.3,'c5'), D('prise',1,.5,0,.3,'c5'), D('inter',0,.6,0,1.1,'c1') ] },
   { name:'Salle de bain', pts:[[3.75,5.5],[6.0,5.5],[6.0,7.6],[3.75,7.6]], items:[
-    O('coulissante',0,.1,.47), D('applique',1,.5,0,1.9), D('prise',1,.25,0,1.1), D('plafonnier',0,.5,1.05) ] },
-  { name:'WC', pts:[[3.75,7.75],[6.0,7.75],[6.0,8.9],[3.75,8.9]], items:[ O('fenetre',2,.4,.6), D('plafonnier',0,.5,.55) ] },
+    O('coulissante',0,.1,.47), D('applique',1,.5,0,1.9,'c1'), D('prise',1,.25,0,1.1,'c5'), D('plafonnier',0,.5,1.05,null,'c1') ] },
+  { name:'WC', pts:[[3.75,7.75],[6.0,7.75],[6.0,8.9],[3.75,8.9]], items:[ O('fenetre',2,.4,.6), D('plafonnier',0,.5,.55,null,'c1') ] },
   { name:'Chambre 2', pts:[[6.15,5.5],[8.4,5.5],[8.4,8.9],[6.15,8.9]], items:[
-    O('porte',0,.1,.47), O('fenetre',2,.22,.75), D('plafonnier',0,.5,1.7), D('prise',1,.4,0,.3), D('prise',3,.6,0,.3) ] }
+    O('porte',0,.1,.47), O('fenetre',2,.22,.75), D('plafonnier',0,.5,1.7,null,'c1'), D('prise',1,.4,0,.3,'c5'), D('prise',3,.6,0,.3,'c5') ] }
+];
+const SAMPLE_CIRCUITS = [
+  { id:'c1', name:'Éclairage RDC', amps:10 }, { id:'c2', name:'Prises salon', amps:16 }, { id:'c3', name:'Prises cuisine', amps:20 },
+  { id:'c4', name:'Plaque de cuisson', amps:32 }, { id:'c5', name:'Prises chambres', amps:16 }, { id:'c6', name:'Détecteurs', amps:2 },
+  { id:'c7', name:'Éclairage étage', amps:10 }, { id:'c8', name:'Prises étage', amps:16 }
 ];
 
 function levelLabel(o){
@@ -1041,6 +1107,7 @@ function ensureLevels(h){
   h.rooms.forEach(r => { if (!h.levels.some(l => l.id === r.levelId)) r.levelId = h.levels.find(l=>l.order===0)?.id || h.levels[0].id; });
   h.levels.sort((a,b) => a.order - b.order);
   if (!h.levels.some(l => l.id === h.curLevel)) h.curLevel = (h.levels.find(l=>l.order===0) || h.levels[0]).id;
+  if (!Array.isArray(h.circuits)) h.circuits = [];
   return h;
 }
 function levelByOrder(h, o, create){
@@ -1216,12 +1283,13 @@ function packHouse(h){
   const ri = id => h.rooms.findIndex(r => r.id === id);
   const off = Object.keys(h.joints || {}).filter(k => h.joints[k].off)
     .map(k => k.split('|').flatMap(x => { const [id, w] = x.split(':'); return [ri(id), +w]; })).filter(a => a[0] >= 0 && a[2] >= 0);
-  return { v: SHARE_V, n: h.name, l: h.levels.map(l => [l.name, l.order]), j: off,
+  const ci = id => { const i = (h.circuits || []).findIndex(c => c.id === id); return i < 0 ? null : i; };
+  return { v: SHARE_V, n: h.name, l: h.levels.map(l => [l.name, l.order]), j: off, c: (h.circuits || []).map(c => [c.name, c.amps]),
     r: h.rooms.map(r => ({ n: r.name, l: lv.indexOf(r.levelId), h: Math.round((r.height || 0) * MM), g: grp(r.sid),
       p: r.pts.flatMap(([x, y]) => [Math.round(x * MM), Math.round(y * MM)]),
       i: (r.items || []).map(it => it.kind === 'opening'
         ? ['o', it.type, it.wall, Math.round(it.t0 * TT), Math.round(it.t1 * TT), (it.swingOut ? 1 : 0) | (it.hingeEnd ? 2 : 0)]
-        : ['d', it.type, it.wall, Math.round(it.t * TT), Math.round((it.d || 0) * MM), it.h == null ? null : Math.round(it.h * MM)]) })) };
+        : ['d', it.type, it.wall, Math.round(it.t * TT), Math.round((it.d || 0) * MM), it.h == null ? null : Math.round(it.h * MM), ci(it.circuit)]) })) };
 }
 // Données venues d'un lien : tout est vérifié, rien n'est repris tel quel
 function unpackHouse(o){
@@ -1232,13 +1300,18 @@ function unpackHouse(o){
     const order = int(Array.isArray(a) ? a[1] : NaN, -20, 50);
     return { id: uid('l'), name: str(a[0]) || levelLabel(order), order };
   });
-  const sids = [];
+  const circuits = (Array.isArray(o.c) ? o.c : []).slice(0, CIRCUIT_MAX.count).map(a => {
+    const amps = int(Array.isArray(a) ? a[1] : NaN, 1, 100);
+    if (!AMPS.includes(amps)) throw new Error('calibre invalide');
+    return { id: uid('c'), name: str(a[0]).slice(0, CIRCUIT_MAX.name) || 'Circuit', amps };
+  });
+  const cids = circuits.map(c => c.id), sids = [];
   const rooms = o.r.slice(0, SHARE_MAX.rooms).map(r => {
     const p = Array.isArray(r && r.p) ? r.p.slice(0, SHARE_MAX.pts * 2) : [], pts = [];
     for (let k = 0; k + 1 < p.length; k += 2) pts.push([int(p[k], -1e7, 1e7) / MM, int(p[k+1], -1e7, 1e7) / MM]);
     if (pts.length < 3) throw new Error('pièce invalide');
     const g = int(r.g, 0, SHARE_MAX.rooms);
-    const items = (Array.isArray(r.i) ? r.i : []).slice(0, SHARE_MAX.items).map(a => unpackItem(a, pts.length, int)).filter(Boolean);
+    const items = (Array.isArray(r.i) ? r.i : []).slice(0, SHARE_MAX.items).map(a => unpackItem(a, pts.length, int, cids)).filter(Boolean);
     return { id: uid('r'), name: str(r.n) || 'Pièce', pts, height: int(r.h, 0, 10 * MM) / MM,
              sid: sids[g] || (sids[g] = uid('s')), levelId: levels[int(r.l, 0, levels.length - 1)].id, items };
   });
@@ -1248,9 +1321,9 @@ function unpackHouse(o){
     const A = rooms[int(a[0], 0, rooms.length - 1)], B = rooms[int(a[2], 0, rooms.length - 1)];
     joints[jointKey(A.id, int(a[1], 0, A.pts.length - 1), B.id, int(a[3], 0, B.pts.length - 1))] = { off: true };
   });
-  return ensureLevels({ id: uid('h'), name: str(o.n) || 'Logement partagé', levels, rooms, joints, date: Date.now() });
+  return ensureLevels({ id: uid('h'), name: str(o.n) || 'Logement partagé', levels, rooms, joints, circuits, date: Date.now() });
 }
-function unpackItem(a, n, int){
+function unpackItem(a, n, int, cids){
   if (!Array.isArray(a)) return null;
   const [k, type] = a;
   if (k === 'o' && own(OPENINGS, type)){
@@ -1259,7 +1332,8 @@ function unpackItem(a, n, int){
   }
   if (k === 'd' && own(DEVICES, type))
     return { id: uid('i'), kind: 'device', type, wall: int(a[2], 0, n - 1), t: int(a[3], 0, TT) / TT, d: int(a[4], 0, 100 * MM) / MM,
-             h: a[5] == null ? null : int(a[5], 0, 100 * MM) / MM };
+             h: a[5] == null ? null : int(a[5], 0, 100 * MM) / MM,
+             circuit: a[6] == null || !DEVICES[type].circ ? null : cids[int(a[6], 0, cids.length - 1)] };
   return null; // type inconnu (version plus récente) : ignoré
 }
 const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
@@ -1402,7 +1476,8 @@ function legend(rooms, x, y, maxY){
   rooms.forEach(r => (r.items || []).forEach(i => { if (i.kind === 'device' && own(DEVICES, i.type)) counts[i.type] = (counts[i.type] || 0) + 1; }));
   const types = Object.keys(DEVICES).filter(k => counts[k]);
   if (!types.length) return '';
-  const x1 = PDF.W - PDF.m, rowH = 6;
+  // lignes resserrées quand les types sont nombreux, pour que la légende tienne au-dessus du cartouche
+  const x1 = PDF.W - PDF.m, rowH = Math.max(4.6, Math.min(6, (maxY - y - 3) / types.length));
   let g = `<text class="pg-lab" x="${x}" y="${y}">LÉGENDE – ÉQUIPEMENTS ÉLECTRIQUES</text>`;
   y += 2;
   types.forEach(k => {
@@ -1442,6 +1517,34 @@ function pageSVG(h, lvl, k, n, lay, date){
     <text class="pg-note" x="15" y="${y1 - 2.5}">Cotes en mètres, mesurées par relevé en réalité augmentée : indicatives, à vérifier sur place.</text>
     ${table.svg}${legend(rooms, P.col + 2, Math.max(table.y + 9, 60), 146)}${titleBlock(h, lvl, k, n, lay.d, date)}</svg>`;
 }
+// Planche des circuits : un tableau sur toute la largeur, les repères renvoient aux plans
+function circuitsPageSVG(h, k, n, date){
+  const P = PDF, x0 = 15, x1 = P.W - 15, y1 = P.H - P.m, rowH = 6.2, e = escapeHtml, tags = circuitTags(h), m = findMeter(h);
+  const cols = [[x0, 'Repère'], [x0 + 16, 'Circuit'], [x0 + 76, 'Disjoncteur'], [x0 + 100, 'Points'], [x0 + 116, 'Appareils et pièces']];
+  let y = 40, g = `<text class="pg-lab" x="${x0}" y="${y - 6}">TABLEAU DES CIRCUITS</text>`
+    + cols.map(([x, lab]) => `<text class="pg-cellb" x="${x}" y="${y}">${lab}</text>`).join('')
+    + `<line class="pg-thin" x1="${x0}" y1="${y + 1.8}" x2="${x1}" y2="${y + 1.8}"/>`;
+  const fit = Math.floor((y1 - 14 - y) / rowH), list = h.circuits.length > fit ? h.circuits.slice(0, fit - 1) : h.circuits;
+  list.forEach(c => {
+    y += rowH;
+    const devs = circuitDevices(h, c.id), rooms = [...new Set(devs.map(d => d.room.name))];
+    const what = devs.length ? `${circuitSummary(devs)} – ${rooms.join(', ')}` : 'Aucun appareil raccordé';
+    g += `<text class="pg-cellb" x="${x0}" y="${y}">${tags.get(c.id)}</text><text class="pg-cell" x="${x0 + 16}" y="${y}">${e(trunc(c.name, 34))}</text>`
+       + `<text class="pg-cell" x="${x0 + 76}" y="${y}">${c.amps} A</text><text class="pg-cell" x="${x0 + 100}" y="${y}">${devs.length}</text>`
+       + `<text class="pg-cell" x="${x0 + 116}" y="${y}">${e(trunc(what, 110))}</text>`
+       + `<line class="pg-thin" x1="${x0}" y1="${y + 1.8}" x2="${x1}" y2="${y + 1.8}" stroke-dasharray=".6 .6"/>`;
+  });
+  if (list.length < h.circuits.length){ y += rowH; g += `<text class="pg-note" x="${x0}" y="${y}">… et ${h.circuits.length - list.length} autres circuits</text>`; }
+  const meter = m ? `Compteur : ${m.room.name}, ${(h.levels.find(l => l.id === m.room.levelId) || {}).name || ''}` : 'Compteur non placé sur les plans';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${P.W} ${P.H}" width="${P.W}" height="${P.H}">${PAGE_STYLE}
+    <rect x="0" y="0" width="${P.W}" height="${P.H}" fill="#fff"/>
+    <rect class="pg-frame" x="${P.m}" y="${P.m}" width="${P.W - 2*P.m}" height="${P.H - 2*P.m}"/>
+    <rect class="pg-thin" x="${P.m + 1.2}" y="${P.m + 1.2}" width="${P.W - 2*P.m - 2.4}" height="${P.H - 2*P.m - 2.4}"/>
+    <text class="pg-title" x="${x0}" y="${P.m + 9}">CIRCUITS ÉLECTRIQUES</text>
+    <text class="pg-sub" x="${x0}" y="${P.m + 13.5}">${e(trunc(h.name, 50))} · ${e(meter)} · ${h.circuits.length} circuit${h.circuits.length > 1 ? 's' : ''}</text>
+    ${g}
+    <text class="pg-note" x="${x0}" y="${y1 - 2.5}">Repères C1, C2… reportés à côté de chaque appareil sur les plans. Planche ${k + 1} / ${n}, ${date}.</text></svg>`;
+}
 // svg2pdf ignore les variables CSS : on fige les styles calculés en attributs
 function inlineStyles(svg, fonts){
   // Lecture complète avant toute écriture : retirer une classe casserait les sélecteurs des descendants
@@ -1470,14 +1573,14 @@ async function exportPDF(h){
   for (const src of PDF_LIBS) await loadScript(src);
   const doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
   const fonts = await registerFonts(doc);
-  const levels = h.levels.filter(l => levelRooms(h, l.id).length);
+  const levels = h.levels.filter(l => levelRooms(h, l.id).length), n = levels.length + (h.circuits.length ? 1 : 0);
   const lay = planLayout(h.rooms), date = new Date().toLocaleDateString('fr-FR');
   const host = document.createElement('div'); host.className = 'print-theme'; host.setAttribute('aria-hidden', 'true');
   document.body.append(host);
   try {
-    for (let k = 0; k < levels.length; k++){
+    for (let k = 0; k < n; k++){
       if (k) doc.addPage('a4', 'landscape');
-      host.innerHTML = pageSVG(h, levels[k], k, levels.length, lay, date);
+      host.innerHTML = k < levels.length ? pageSVG(h, levels[k], k, n, lay, date) : circuitsPageSVG(h, k, n, date);
       const svg = host.querySelector('svg'); inlineStyles(svg, fonts);
       await window.svg2pdf.svg2pdf(svg, doc, { x: 0, y: 0, width: PDF.W, height: PDF.H });
     }
@@ -1578,17 +1681,17 @@ $('#newHouseBtn').addEventListener('click', () => {
   houses.unshift(h); persist(); openHouse(h);
 });
 const SAMPLE_UP = [
-  { name:'Chambre 3', pts:[[0,0],[4.0,0],[4.0,3.9],[0,3.9]], items:[ O('fenetre',0,.35,.65), O('porte',1,.75,.96), D('plafonnier',0,.5,1.95) ] },
-  { name:'Salle d’eau', pts:[[4.15,0],[6.2,0],[6.2,2.4],[4.15,2.4]], items:[ O('porte',2,.1,.5), D('applique',0,.5,0,1.9) ] },
-  { name:'Palier', pts:[[4.15,2.55],[8.4,2.55],[8.4,3.9],[4.15,3.9]], items:[ D('detecteur',0,.5,.6) ] },
-  { name:'Bureau', pts:[[6.35,0],[8.4,0],[8.4,2.4],[6.35,2.4]], items:[ O('fenetre',0,.2,.8), O('porte',2,.1,.5), D('prise',1,.5,0,.3), D('rj45',1,.6,0,.3) ] }
+  { name:'Chambre 3', pts:[[0,0],[4.0,0],[4.0,3.9],[0,3.9]], items:[ O('fenetre',0,.35,.65), O('porte',1,.75,.96), D('plafonnier',0,.5,1.95,null,'c7') ] },
+  { name:'Salle d’eau', pts:[[4.15,0],[6.2,0],[6.2,2.4],[4.15,2.4]], items:[ O('porte',2,.1,.5), D('applique',0,.5,0,1.9,'c7') ] },
+  { name:'Palier', pts:[[4.15,2.55],[8.4,2.55],[8.4,3.9],[4.15,3.9]], items:[ D('detecteur',0,.5,.6,null,'c6') ] },
+  { name:'Bureau', pts:[[6.35,0],[8.4,0],[8.4,2.4],[6.35,2.4]], items:[ O('fenetre',0,.2,.8), O('porte',2,.1,.5), D('prise',1,.5,0,.3,'c8'), D('rj45',1,.6,0,.3) ] }
 ];
 $('#demoBtn').addEventListener('click', () => {
   const l0 = { id:'l0', name:'Rez-de-chaussée', order:0 }, l1 = { id:'l1', name:'1er étage', order:1 };
   const mk = (list, l, k) => list.map((r,i)=>({ id:'d'+k+i, name:r.name, pts:r.pts.map(p=>p.slice()), height:2.5, sid:'demo', levelId:l.id,
     items:(r.items||[]).map((it,j)=>({ ...it, id:'d'+k+i+'-'+j })) }));
   openHouse({ id:'demo', demo:true, name:'Maison (exemple)', date:Date.now(), levels:[l0,l1], curLevel:'l0',
-    rooms: mk(SAMPLE_ROOMS, l0, 'a').concat(mk(SAMPLE_UP, l1, 'b')) });
+    rooms: mk(SAMPLE_ROOMS, l0, 'a').concat(mk(SAMPLE_UP, l1, 'b')), circuits: SAMPLE_CIRCUITS.map(c => ({ ...c })) });
 });
 
 function renderDraft(){
@@ -1610,7 +1713,8 @@ function renderDraft(){
 
 /* Logement */
 let arranging = false, selIdx = null, aView = null, drag = null, houseEditing = false;
-function openHouse(h){ $('#housePlan')._zoom = null; house = ensureLevels(h); arranging = false; houseEditing = false; selIdx = null; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); drawIn($('#housePlan'), levelRooms(house).length); }
+let selCircuit = null; // circuit dont le câblage est tracé sur le plan
+function openHouse(h){ $('#housePlan')._zoom = null; selCircuit = null; house = ensureLevels(h); arranging = false; houseEditing = false; selIdx = null; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); drawIn($('#housePlan'), levelRooms(house).length); }
 function renderHouse(){
   const h = ensureLevels(house), all = h.rooms, lvl = curLevel(h);
   const rooms = levelRooms(h);
@@ -1628,7 +1732,7 @@ function renderHouse(){
   } else {
     // Même cadrage pour tous les niveaux : les étages se superposent quand on change d'onglet
     const box = planBox(plan), v = arranging ? (aView || (aView = makeView(all, 3, box))) : makeView(all, 0.6, box);
-    const opts = { id:'hsvg', house: h, badges: houseEditing && !arranging, level: lvl.id, ghost: arranging || !rooms.length, dims: $('#dimsChk').checked && !arranging, elec: $('#elecChk').checked, sel: arranging ? movingSet() : null };
+    const opts = { id:'hsvg', house: h, badges: houseEditing && !arranging, level: lvl.id, ghost: arranging || !rooms.length, dims: $('#dimsChk').checked && !arranging, elec: $('#elecChk').checked, sel: arranging ? movingSet() : null, circuit: arranging ? null : selCircuit };
     plan.innerHTML = houseSVG(all, v, opts);
     plan._view = v; plan._opts = opts;
     plan._map = { S: v.S, pad: v.pad, ox: v.minX, oy: v.minY }; applyZoom(plan);
@@ -1653,6 +1757,8 @@ function renderHouse(){
     <button class="open" data-r="${i}"><b>${escapeHtml(r.name)}</b><span>${r.pts.length} murs${(r.items||[]).length ? ', ' + r.items.length + ' élément' + (r.items.length>1?'s':'') : ''}, hauteur ${fmt(r.height||0)} m</span></button>
     <span class="area">${fmt(area(r.pts),1)} m²</span></li>`; }).join('')
     : '<li class="empty">Aucune pièce sur ce niveau pour l’instant.</li>';
+  $('#circuitPanel').classList.toggle('hidden', arranging || !all.length);
+  if (!arranging && all.length) renderCircuits();
   $('#houseEditPanel').classList.toggle('hidden', !houseEditing || arranging);
   if (houseEditing && !arranging) renderJoints();
   $('#sharedPanel').classList.toggle('hidden', !h.shared);
@@ -1813,6 +1919,72 @@ $('#jointList').addEventListener('change', e => {
   r.pts = r.pts.map(([x, y]) => [x + jt.na[0]*k, y + jt.na[1]*k]);
   save(); renderHouse();
   if (Math.abs(d) >= 0.005) toast(`${r.name} décalée de ${fmt(Math.abs(d) * 100, 0)} cm`);
+});
+
+/* Compteur et circuits */
+function newCircuit(h, name, amps){
+  const c = { id: uid('c'), name: uniqueName(name, h.circuits.map(x => x.name)).slice(0, CIRCUIT_MAX.name), amps };
+  h.circuits = h.circuits.concat(c);
+  return c;
+}
+function circuitSummary(devs){
+  const n = {}; devs.forEach(({ it }) => { n[it.type] = (n[it.type] || 0) + 1; });
+  return Object.keys(DEVICES).filter(k => n[k]).map(k => `${DEVICES[k].label} ×${n[k]}`).join(', ');
+}
+function renderCircuits(){
+  const h = house, m = findMeter(h);
+  if (selCircuit && !h.circuits.some(c => c.id === selCircuit)) selCircuit = null;
+  const lvl = m && h.levels.find(l => l.id === m.room.levelId);
+  $('#meterStatus').textContent = m
+    ? `Compteur : ${m.room.name}${h.levels.length > 1 ? ' (' + lvl.name.toLowerCase() + ')' : ''}. Touchez un repère pour tracer le circuit sur le plan. Le circuit de chaque appareil se choisit dans sa pièce.`
+    : 'Aucun compteur sur le plan : ouvrez la pièce où il se trouve et placez un « Compteur électrique ».';
+  $('#addCircuit').disabled = h.circuits.length >= CIRCUIT_MAX.count;
+  if (document.activeElement && document.activeElement.matches('#circuitList input')) return; // ne pas couper une saisie
+  $('#circuitList').innerHTML = h.circuits.length ? h.circuits.map((c, i) => {
+    const devs = circuitDevices(h, c.id), rooms = [...new Set(devs.map(d => d.room.name))], on = selCircuit === c.id;
+    return `<li class="${on ? 'on' : ''}">
+      <button class="cn" data-csel="${c.id}" aria-pressed="${on}" aria-label="Tracer C${i + 1} sur le plan">C${i + 1}</button>
+      <input class="cname" data-cname="${c.id}" value="${escapeHtml(c.name)}" maxlength="${CIRCUIT_MAX.name}" aria-label="Nom du circuit C${i + 1}">
+      <select data-camps="${c.id}" aria-label="Calibre du disjoncteur de C${i + 1}">${AMPS.map(a => `<option value="${a}"${a === c.amps ? ' selected' : ''}>${a} A</option>`).join('')}</select>
+      <button class="mini danger" data-cdel="${c.id}">Supprimer</button>
+      <span class="cinfo">${devs.length ? `${devs.length} point${devs.length > 1 ? 's' : ''} : ${circuitSummary(devs)}. ${rooms.map(escapeHtml).join(', ')}.` : 'Aucun appareil raccordé.'}</span></li>`;
+  }).join('') : '<li class="empty">Aucun circuit. Ajoutez ceux de votre tableau, puis raccordez prises et luminaires depuis chaque pièce.</li>';
+}
+const findCircuit = id => house.circuits.find(c => c.id === id);
+$('#addCircuit').addEventListener('click', () => {
+  const c = newCircuit(house, 'Circuit ' + (house.circuits.length + 1), CIRCUIT_KINDS.plug.amps);
+  save(); renderHouse();
+  const inp = document.querySelector(`[data-cname="${c.id}"]`); if (inp){ inp.focus(); inp.select(); }
+});
+$('#circuitList').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const tags = circuitTags(house);
+  if (b.dataset.csel){
+    const id = b.dataset.csel;
+    selCircuit = selCircuit === id ? null : id;
+    if (selCircuit){
+      $('#elecChk').checked = true;
+      const devs = circuitDevices(house, id);
+      if (devs.length && !devs.some(d => d.room.levelId === house.curLevel)) toast(`${tags.get(id)} n’a aucun point sur ce niveau`);
+    }
+    renderHouse(); return;
+  }
+  const c = findCircuit(b.dataset.cdel); if (!c) return;
+  const n = circuitDevices(house, c.id).length;
+  if (!confirm(`Supprimer ${tags.get(c.id)} « ${c.name} » ?${n ? ` Ses ${n} appareil${n > 1 ? 's' : ''} ne seront plus raccordés.` : ''}`)) return;
+  house.circuits = house.circuits.filter(x => x !== c);
+  house.rooms.forEach(r => { r.items = (r.items || []).map(it => it.circuit === c.id ? { ...it, circuit: null } : it); });
+  save(); renderHouse();
+});
+$('#circuitList').addEventListener('input', e => {
+  const c = findCircuit(e.target.dataset.cname); if (!c) return;
+  c.name = e.target.value.slice(0, CIRCUIT_MAX.name); save();
+});
+$('#circuitList').addEventListener('change', e => {
+  const d = e.target.dataset, c = findCircuit(d.cname || d.camps); if (!c) return;
+  if (d.camps){ const a = +e.target.value; if (AMPS.includes(a)) c.amps = a; }
+  if (d.cname){ c.name = e.target.value.trim().slice(0, CIRCUIT_MAX.name) || 'Circuit'; e.target.blur(); }
+  save(); renderHouse();
 });
 
 /* Ajustement de la disposition */
@@ -2040,12 +2212,20 @@ function renderItems(){
       const def = DEVICES[it.type] || {};
       info = def.wall ? `Mur ${it.wall+1}` : 'Au plafond';
       if (def.wall) ctl += `<label class="num-in">Hauteur <input type="number" step="0.01" min="0" inputmode="decimal" data-h="${it.id}" value="${it.h != null ? it.h.toFixed(2) : ''}" placeholder="?"> m</label>`;
+      if (def.circ) ctl += `<label class="num-in">Circuit <select data-circ="${it.id}">${circuitOptions(it)}</select></label>`;
     }
     ctl += `<button class="mini danger" data-delit="${it.id}">Supprimer</button>`;
     return `<li id="it-${it.id}" class="${selItem === it.id ? 'on' : ''}">${itemIcon(it)}<button class="open" data-selit="${it.id}"><b>${itemLabel(it)}</b><span>${info}</span></button><div class="ctl">${ctl}</div></li>`;
   }).join('');
 }
 const findItem = id => (roomRef.items || []).find(i => i.id === id);
+const NEW_CIRCUIT = '+';
+function circuitOptions(it){
+  const cur = house.circuits.some(c => c.id === it.circuit) ? it.circuit : '';
+  return `<option value=""${cur ? '' : ' selected'}>Non raccordé</option>`
+    + house.circuits.map((c, i) => `<option value="${c.id}"${c.id === cur ? ' selected' : ''}>C${i + 1} · ${escapeHtml(c.name)} (${c.amps} A)</option>`).join('')
+    + (house.circuits.length < CIRCUIT_MAX.count ? `<option value="${NEW_CIRCUIT}">Nouveau circuit…</option>` : '');
+}
 $('#itemList').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   const d = b.dataset;
@@ -2058,8 +2238,16 @@ $('#itemList').addEventListener('click', e => {
   save(); renderRoom();
 });
 $('#itemList').addEventListener('change', e => {
-  const d = e.target.dataset, it = findItem(d.w || d.h); if (!it) return;
+  const d = e.target.dataset, it = findItem(d.w || d.h || d.circ); if (!it) return;
   snapshot();
+  if (d.circ){
+    let id = e.target.value || null;
+    if (id === NEW_CIRCUIT){
+      const k = CIRCUIT_KINDS[DEVICES[it.type].circ], c = newCircuit(house, `${k.name} ${roomRef.name}`, k.amps);
+      id = c.id; toast(`${circuitTags(house).get(id)} « ${c.name} » créé : renommez-le depuis le plan du logement`);
+    }
+    it.circuit = house.circuits.some(c => c.id === id) ? id : null;
+  }
   if (d.h){ const v = parseFloat(e.target.value); it.h = isNaN(v) ? null : v; }
   if (d.w){
     const L = wallLen(roomRef.pts, it.wall), w = Math.max(0.3, Math.min(parseFloat(e.target.value) || 0, L));
@@ -2072,7 +2260,7 @@ $('#itemList').addEventListener('change', e => {
 });
 function renderRoom(){
   const r = roomRef, p = r.pts, h = r.height || 0, A = area(p), P = perimeter(p);
-  const out = roomSVG(r, { sel: selItem, edit: editing, selCorner, frame: rdrag ? rdrag.frame : null, box: planBox($('#roomPlan')),
+  const out = roomSVG(r, { sel: selItem, edit: editing, selCorner, frame: rdrag ? rdrag.frame : null, box: planBox($('#roomPlan')), tags: circuitTags(house),
                             measure: editing ? selItem : null, guides: rdrag && rdrag.guides });
   $('#roomPlan').innerHTML = out.svg; $('#roomPlan')._tf = out.tf;
   $('#roomPlan')._map = { S: out.tf.S, pad: out.tf.pad, ox: out.tf.x0, oy: out.tf.y0 }; applyZoom($('#roomPlan'));
