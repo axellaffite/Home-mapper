@@ -148,3 +148,9 @@ No blurred shadows outside the AR overlay.
   current item ink with a 2px ink rule on its outer edge, others `--ink-soft`.
 - **Toast**: ink fill, `--on-ink` text, `--r1`.
 - **Context menu**: sheet, 1px ink border, `--stack-ink`.
+- **Electrical panel**: sheet, 1px ink border, `--stack`. Meter on top in `--elec`, then rails of six
+  breaker modules (36×76px, 1.5px `--elec` outline, `--r1`) over a double `--construct` DIN rail. The
+  active breaker turns pencil with `--pencil-wash` fill; its devices turn pencil on the plan and are joined
+  to the meter by a dashed pencil line. "Add" module: dashed `--ink-soft`.
+- **Circuit tag**: C1, C2… in letter 600 8px `--elec` next to each device; `?` in `--ink-soft` for an
+  unconnected device in the panel view.
