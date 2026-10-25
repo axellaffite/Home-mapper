@@ -243,11 +243,14 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 .meter svg text{fill:var(--elec);stroke:none;font:600 10px var(--f-letter);text-anchor:middle}
 .meter b{display:block;font:600 var(--fs-fig) var(--f-letter)}
 .meter span{font-size:var(--fs-note);color:var(--ink-soft)}
-.rail{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--s1);padding:var(--s3) 0 var(--s1);border-bottom:1px dotted var(--hair)}
-.rail:last-child{border-bottom:0}
-/* le rail DIN, derrière les modules */
-.rail::before{content:"";position:absolute;left:0;right:0;top:calc(var(--s3) + 34px);height:7px;border-top:1px solid var(--construct);border-bottom:1px solid var(--construct)}
-.brk{position:relative;display:flex;flex-direction:column;align-items:center;gap:var(--s1);min-width:0;background:none;border:0;padding:0 0 var(--s1);color:var(--elec)}
+.railh{display:flex;align-items:center;gap:var(--s2);margin-top:var(--s3);min-height:28px}
+.railh .rw{flex:1;font-size:var(--fs-note);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.railh .mini{min-height:32px}
+/* une rangée ne se replie pas : elle défile si elle dépasse, comme un vrai rail */
+.rail{position:relative;display:flex;gap:var(--s1);padding:var(--s1) 0 var(--s1);border-bottom:1px dotted var(--hair);overflow-x:auto;scrollbar-width:thin;
+  /* le rail DIN derrière les modules, peint sur toute la longueur défilante */
+  background:linear-gradient(var(--construct),var(--construct)) 0 calc(var(--s1) + 34px)/100% 1px no-repeat local,linear-gradient(var(--construct),var(--construct)) 0 calc(var(--s1) + 41px)/100% 1px no-repeat local}
+.brk{position:relative;flex:none;width:46px;display:flex;flex-direction:column;align-items:center;gap:var(--s1);min-width:0;background:none;border:0;padding:0 0 var(--s1);color:var(--elec)}
 .brk .mod{width:36px;height:76px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:5px 0 6px;border:1.5px solid var(--elec);border-radius:var(--r1);background:var(--sheet)}
 .brk .tg{font:600 13px/1 var(--f-letter);font-variant-numeric:tabular-nums}
 .brk .lever{width:12px;height:18px;border:1.5px solid currentColor;border-radius:1px;background:linear-gradient(currentColor,currentColor) top/100% 50% no-repeat}
@@ -256,7 +259,18 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 .brk[aria-pressed="true"]{color:var(--pencil)}
 .brk[aria-pressed="true"] .mod{border-color:var(--pencil);background:var(--pencil-wash)}
 .brk[aria-pressed="true"] .nm{color:var(--ink)}
+.brk.w2{width:80px}
+.brk.w2 .mod{width:74px}
+.brk .ma{font:500 10px/1 var(--f-letter);font-variant-numeric:tabular-nums}
+.brk.aux .mod{justify-content:flex-start;gap:var(--s3)}
+.brk .warn{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:var(--pencil);color:var(--on-ink);font:600 11px/16px var(--f-letter);font-style:normal;text-align:center}
 .brk.add{color:var(--ink-soft)}
+.brk.add[aria-pressed="true"] .mod{border:1.5px solid var(--pencil);color:var(--pencil);background:var(--pencil-wash)}
+.bsub{margin:var(--s3) 0 var(--s2);font:600 var(--fs-label)/1.2 var(--f-letter);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.bmove{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s3)}
+.bmove .mini:disabled{border-style:dashed;border-color:var(--construct);color:var(--construct)}
+.advice{margin:var(--s2) 0 0;padding:var(--s2) var(--s3) var(--s2) var(--s5);border-left:2px solid var(--pencil);background:var(--pencil-wash);font-size:var(--fs-note);color:var(--ink)}
+.advice li+li{margin-top:var(--s1)}
 .brk.add .mod{border:1px dashed var(--ink-soft);justify-content:center;font:500 22px/1 var(--f-letter)}
 @media (hover:hover){ .brk:hover .mod{border-color:var(--ink)} .brk[aria-pressed="true"]:hover .mod{border-color:var(--pencil)} }
 .brkedit{margin-top:var(--s3)}
@@ -574,13 +588,30 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
  <div class="sidebar">
   <p class="status" id="panelHint" style="margin-top:0"></p>
   <div class="board" id="board"></div>
+  <div class="arrange brkedit hidden" id="brkAdd">
+    <p class="lab" id="brkAddTitle" style="margin:0"></p>
+    <h3 class="bsub">Disjoncteur</h3>
+    <div class="bchips" id="brkAddUses"></div>
+    <h3 class="bsub">Autre module</h3>
+    <div class="bchips" id="brkAddMods"></div>
+    <div class="row" style="justify-content:flex-end"><button class="mini" data-addcancel>Annuler</button></div>
+  </div>
   <div class="arrange brkedit hidden" id="brkEditor">
     <div class="bh">
       <span class="cn" id="brkTag"></span>
-      <input class="cname" id="brkName" aria-label="Nom du circuit">
-      <select id="brkAmps" aria-label="Calibre du disjoncteur"></select>
+      <input class="cname" id="brkName" maxlength="40" aria-label="Nom">
+    </div>
+    <div class="bh" style="margin-top:var(--s2)">
+      <select id="brkUse" aria-label="Usage du circuit"></select>
+      <select id="brkAmps" aria-label="Calibre"></select>
+      <select id="brkType" aria-label="Type de différentiel"></select>
+    </div>
+    <div class="bmove" id="brkMove" role="group" aria-label="Position dans le tableau">
+      <button class="mini" data-mv="left" aria-label="Vers la gauche">←</button><button class="mini" data-mv="right" aria-label="Vers la droite">→</button>
+      <button class="mini" data-mv="up">Rangée du dessus</button><button class="mini" data-mv="down">Rangée du dessous</button>
     </div>
     <p id="brkInfo" style="margin:var(--s3) 0 0"></p>
+    <ul class="advice hidden" id="brkAdvice"></ul>
     <div class="row" style="justify-content:space-between;align-items:center">
       <button class="btn-danger" id="brkDel">Supprimer le disjoncteur</button>
       <button class="mini" id="brkDone">Terminer</button>
@@ -736,6 +767,8 @@ const DEVICES = {
   applique:   { label: 'Applique', wall: true, circ: 'light' },
   prise:      { label: 'Prise 16 A', wall: true, circ: 'plug' },
   prise32:    { label: 'Prise 32 A', wall: true, circ: 'power' },
+  prisesp:    { label: 'Prise spécialisée', wall: true, circ: 'dedicated' }, // lave-vaisselle, lave-linge, four…
+  sortie:     { label: 'Sortie de câble', wall: true, circ: 'dedicated' },   // chauffe-eau, radiateur, hotte…
   inter:      { label: 'Interrupteur', wall: true, circ: 'light' },
   vav:        { label: 'Va-et-vient', wall: true, circ: 'light' },
   rj45:       { label: 'Prise RJ45', wall: true },
@@ -746,10 +779,44 @@ const DEVICES = {
 };
 /* Circuits : partent du compteur, regroupent des appareils de plusieurs pièces et niveaux */
 const CIRCUIT_KINDS = {
-  light: { name: 'Éclairage', amps: 10 }, plug: { name: 'Prises', amps: 16 },
-  power: { name: 'Circuit spécialisé', amps: 32 }, alarm: { name: 'Détecteurs', amps: 2 }
+  light: { name: 'Éclairage', amps: 10, use: 'eclairage' }, plug: { name: 'Prises', amps: 16, use: 'prises' },
+  power: { name: 'Plaque de cuisson', amps: 32, use: 'plaque' }, alarm: { name: 'Détecteurs', amps: 2, use: 'autre' },
+  dedicated: { name: 'Circuit spécialisé', amps: 20, use: 'autre' }
 };
-const AMPS = [2, 10, 16, 20, 32, 40];
+const AMPS = [2, 10, 16, 20, 25, 32, 40];
+/* Usage d'un disjoncteur et repères de la NF C 15-100 : amps conseillé, fixed si ce calibre est la règle,
+   max : points par circuit selon le calibre (points : appareils comptés, les interrupteurs ne le sont pas),
+   one : circuit spécialisé (un seul appareil), typeA : différentiel de type A */
+const BREAKER_USES = {
+  eclairage:     { label: 'Éclairage', amps: 10, max: () => 8, points: ['plafonnier', 'spot', 'applique'] },
+  prises:        { label: 'Prises', amps: 16, max: a => a >= 20 ? 12 : 8, points: ['prise'] },
+  lavevaisselle: { label: 'Lave-vaisselle', amps: 20, fixed: true, one: true },
+  lavelinge:     { label: 'Lave-linge', amps: 20, fixed: true, one: true, typeA: true },
+  sechelinge:    { label: 'Sèche-linge', amps: 20, fixed: true, one: true },
+  four:          { label: 'Four', amps: 20, fixed: true, one: true },
+  plaque:        { label: 'Plaque de cuisson', amps: 32, fixed: true, one: true, typeA: true },
+  congelateur:   { label: 'Congélateur', amps: 20, fixed: true, one: true },
+  chauffeeau:    { label: 'Chauffe-eau', amps: 20, fixed: true, one: true },
+  chauffage:     { label: 'Chauffage', amps: 20 },
+  clim:          { label: 'Climatisation, pompe à chaleur', amps: 20, one: true },
+  borne:         { label: 'Borne de recharge', amps: 40, one: true, typeA: true },
+  vmc:           { label: 'VMC', amps: 2, fixed: true, one: true },
+  volets:        { label: 'Volets roulants', amps: 16 },
+  exterieur:     { label: 'Extérieur, portail', amps: 16 },
+  communication: { label: 'Tableau de communication', amps: 16, one: true },
+  autre:         { label: 'Autre', amps: 16 }
+};
+// Modules du tableau autres que les disjoncteurs ; w : largeur en modules de 18 mm
+const MODULE_KINDS = {
+  rcd:       { label: 'Interrupteur différentiel 30 mA', name: 'Différentiel', short: 'ID', w: 2 },
+  contactor: { label: 'Contacteur heures creuses', name: 'Heures creuses', short: 'HC', w: 1 },
+  surge:     { label: 'Parafoudre', name: 'Parafoudre', short: 'PF', w: 1 },
+  relay:     { label: 'Télérupteur ou minuterie', name: 'Télérupteur', short: 'TL', w: 1 },
+  other:     { label: 'Autre module', name: 'Module', short: '…', w: 1 }
+};
+const RCD_AMPS = [25, 40, 63], RCD_TYPES = ['AC', 'A', 'F'], RCD_MAX = 8; // 8 circuits au plus par différentiel
+const PANEL_MAX = { rails: 12, modules: 60 };
+const BRK_PER_RAIL = 6; // rangement des tableaux enregistrés avant les rangées
 const CIRCUIT_MAX = { count: 99, name: 40 };
 const isWired = it => it.kind === 'device' && !!(DEVICES[it.type] && DEVICES[it.type].circ);
 // Repères C1, C2… dans l'ordre de la liste des circuits
@@ -871,6 +938,8 @@ function symbol(type, th = 0){
     case 'applique':   return '<line x1="0" y1="0" x2="0" y2="3"/><circle cx="0" cy="9" r="6"/><path d="M-4.2 4.8 L4.2 13.2 M4.2 4.8 L-4.2 13.2"/>';
     case 'prise':      return plug + '<line x1="-5" y1="13.5" x2="5" y2="13.5"/>';
     case 'prise32':    return '<line x1="0" y1="0" x2="0" y2="4"/><path class="f" d="M-7 4 H7 A7 7 0 0 1 -7 4"/><line x1="-5" y1="13.5" x2="5" y2="13.5"/>';
+    case 'prisesp':    return plug + '<line x1="-5" y1="13.5" x2="5" y2="13.5"/>' + tx(22, 'S');
+    case 'sortie':     return '<line x1="0" y1="0" x2="0" y2="4"/><rect x="-5" y="4" width="10" height="9"/><path d="M-5 13 L5 4"/>';
     case 'rj45':       return plug + tx(20, 'RJ');
     case 'tv':         return plug + tx(20, 'TV');
     case 'inter':      return '<circle cx="0" cy="8" r="3.5"/><path d="M2.5 10.5 L9 17 L12 14"/>';
@@ -1232,7 +1301,8 @@ const SAMPLE_ROOMS = [
     floor:{ mat:'carrelage', ref:'60 × 60 cm', tint:'Gris béton', color:'#A7A6A1' },
     walls:{ mat:'peinture', tint:'Blanc cassé', color:'#EDE8DD', sheen:'Velours' } }, items:[
     O('fenetre',0,.3,.69), O('porte',2,.65,.85,{hingeEnd:true}),
-    D('plafonnier',0,.5,2.05,null,'c1'), D('prise32',1,.5,0,.15,'c4'), D('prise',0,.12,0,1.1,'c3'), D('prise',0,.88,0,1.1,'c3'), D('inter',2,.6,0,1.1,'c1') ] },
+    D('plafonnier',0,.5,2.05,null,'c1'), D('prise32',1,.5,0,.15,'c4'), D('prise',0,.12,0,1.1,'c3'), D('prise',0,.88,0,1.1,'c3'), D('inter',2,.6,0,1.1,'c1'),
+    D('prisesp',1,.82,0,.3,'c9') ] },
   { name:'Couloir', pts:[[0,4.25],[8.4,4.25],[8.4,5.35],[0,5.35]], items:[
     O('porte',3,.12,.87), D('tableau',1,.5,0,1.4), D('compteur',2,.94,0,1.6), D('detecteur',0,.5,.55,null,'c6'), D('spot',0,.25,.55,null,'c1'), D('spot',0,.75,.55,null,'c1'), D('vav',3,.95,0,1.1,'c1'), D('vav',1,.15,0,1.1,'c1') ] },
   { name:'Chambre', pts:[[0,5.5],[3.6,5.5],[3.6,8.9],[0,8.9]], items:[
@@ -1241,16 +1311,25 @@ const SAMPLE_ROOMS = [
   { name:'Salle de bain', pts:[[3.75,5.5],[6.0,5.5],[6.0,7.6],[3.75,7.6]], finishes:{
     floor:{ mat:'carrelage', ref:'60 × 60 cm', tint:'Gris béton', color:'#A7A6A1' },
     walls:{ mat:'faience', ref:'20 × 20 cm', tint:'Blanc brillant', color:'#F4F4F2', note:'Sur toute la hauteur' } }, items:[
-    O('coulissante',0,.1,.47), D('applique',1,.5,0,1.9,'c1'), D('prise',1,.25,0,1.1,'c5'), D('plafonnier',0,.5,1.05,null,'c1') ] },
-  { name:'WC', pts:[[3.75,7.75],[6.0,7.75],[6.0,8.9],[3.75,8.9]], items:[ O('fenetre',2,.4,.6), D('plafonnier',0,.5,.55,null,'c1') ] },
+    O('coulissante',0,.1,.47), D('applique',1,.5,0,1.9,'c1'), D('prise',1,.25,0,1.1,'c5'), D('plafonnier',0,.5,1.05,null,'c1'),
+    D('prisesp',2,.7,0,.3,'c10') ] },
+  { name:'WC', pts:[[3.75,7.75],[6.0,7.75],[6.0,8.9],[3.75,8.9]], items:[ O('fenetre',2,.4,.6), D('plafonnier',0,.5,.55,null,'c1'), D('sortie',1,.5,0,1.8,'c11') ] },
   { name:'Chambre 2', pts:[[6.15,5.5],[8.4,5.5],[8.4,8.9],[6.15,8.9]], items:[
     O('porte',0,.1,.47), O('fenetre',2,.22,.75), D('plafonnier',0,.5,1.7,null,'c1'), D('prise',1,.4,0,.3,'c5'), D('prise',3,.6,0,.3,'c5') ] }
 ];
 const SAMPLE_CIRCUITS = [
-  { id:'c1', name:'Éclairage RDC', amps:10 }, { id:'c2', name:'Prises salon', amps:16 }, { id:'c3', name:'Prises cuisine', amps:20 },
-  { id:'c4', name:'Plaque de cuisson', amps:32 }, { id:'c5', name:'Prises chambres', amps:16 }, { id:'c6', name:'Détecteurs', amps:2 },
-  { id:'c7', name:'Éclairage étage', amps:10 }, { id:'c8', name:'Prises étage', amps:16 }
+  { id:'c1', name:'Éclairage RDC', amps:10, use:'eclairage' }, { id:'c2', name:'Prises salon', amps:16, use:'prises' }, { id:'c3', name:'Prises cuisine', amps:20, use:'prises' },
+  { id:'c4', name:'Plaque de cuisson', amps:32, use:'plaque' }, { id:'c5', name:'Prises chambres', amps:16, use:'prises' }, { id:'c6', name:'Détecteurs', amps:2, use:'autre' },
+  { id:'c7', name:'Éclairage étage', amps:10, use:'eclairage' }, { id:'c8', name:'Prises étage', amps:16, use:'prises' },
+  { id:'c9', name:'Lave-vaisselle', amps:20, use:'lavevaisselle' }, { id:'c10', name:'Lave-linge', amps:20, use:'lavelinge' },
+  { id:'c11', name:'Chauffe-eau', amps:20, use:'chauffeeau' }
 ];
+// Trois rangées, chacune ouverte par son différentiel ; type A pour la cuisine et le lave-linge
+const SAMPLE_MODULES = [
+  { id:'m1', kind:'rcd', amps:40, rtype:'A' }, { id:'m2', kind:'rcd', amps:40, rtype:'AC' }, { id:'m3', kind:'rcd', amps:40, rtype:'AC' },
+  { id:'m4', kind:'contactor', name:'Chauffe-eau heures creuses' }
+];
+const SAMPLE_RAILS = [['m1', 'c4', 'c9', 'c10', 'c3'], ['m2', 'c1', 'c2', 'c5', 'c6'], ['m3', 'c7', 'c8', 'm4', 'c11']];
 
 function levelLabel(o){
   if (o === 0) return 'Rez-de-chaussée';
@@ -1266,7 +1345,7 @@ function ensureLevels(h){
   h.levels.sort((a,b) => a.order - b.order);
   if (!h.levels.some(l => l.id === h.curLevel)) h.curLevel = (h.levels.find(l=>l.order===0) || h.levels[0]).id;
   if (!Array.isArray(h.circuits)) h.circuits = [];
-  return h;
+  return ensurePanel(h);
 }
 function levelByOrder(h, o, create){
   let l = h.levels.find(x => x.order === o);
@@ -1939,7 +2018,7 @@ function packHouse(h){
   const off = Object.keys(h.joints || {}).filter(k => h.joints[k].off)
     .map(k => k.split('|').flatMap(x => { const [id, w] = x.split(':'); return [ri(id), +w]; })).filter(a => a[0] >= 0 && a[2] >= 0);
   const ci = id => { const i = (h.circuits || []).findIndex(c => c.id === id); return i < 0 ? null : i; };
-  return { v: SHARE_V, n: h.name, l: h.levels.map(l => [l.name, l.order]), j: off, c: (h.circuits || []).map(c => [c.name, c.amps]),
+  return { v: SHARE_V, n: h.name, l: h.levels.map(l => [l.name, l.order]), j: off, c: (h.circuits || []).map(c => [c.name, c.amps, c.use || '']), ...packPanel(h),
     r: h.rooms.map(r => ({ n: r.name, l: lv.indexOf(r.levelId), h: Math.round((r.height || 0) * MM), g: grp(r.sid),
       p: r.pts.flatMap(([x, y]) => [Math.round(x * MM), Math.round(y * MM)]),
       i: (r.items || []).map(it => it.kind === 'opening'
@@ -1949,6 +2028,24 @@ function packHouse(h){
       f: packFinishes(r) })), b: packBudget(h) };
 }
 const mmOrNull = v => v == null ? null : Math.round(v * MM);
+// Tableau : m les autres modules, k les rangées (n° de disjoncteur, ou -1 - n° de module)
+function packPanel(h){
+  if (!h.modules || !h.rails) return {};
+  const ci = new Map(h.circuits.map((c, i) => [c.id, i])), mi = new Map(h.modules.map((m, i) => [m.id, i]));
+  return { m: h.modules.map(m => [m.kind, m.amps || 0, m.rtype || '', m.name || '']), k: h.rails.map(r => r.map(id => ci.has(id) ? ci.get(id) : -1 - mi.get(id))) };
+}
+function unpackPanel(o, circuits, int){
+  const modules = (Array.isArray(o.m) ? o.m : []).slice(0, PANEL_MAX.modules).map(a => {
+    if (!Array.isArray(a) || !own(MODULE_KINDS, a[0])) throw new Error('module invalide');
+    const rcd = a[0] === 'rcd';
+    return { id: uid('m'), kind: a[0], ...(rcd ? { amps: RCD_AMPS.includes(a[1]) ? a[1] : 40, rtype: RCD_TYPES.includes(a[2]) ? a[2] : 'A' } : {}),
+             ...(typeof a[3] === 'string' && a[3] ? { name: a[3].slice(0, CIRCUIT_MAX.name) } : {}) };
+  });
+  if (!Array.isArray(o.k)) return { modules }; // lien plus ancien : rangées recalculées
+  const rails = o.k.slice(0, PANEL_MAX.rails).map(r => (Array.isArray(r) ? r : []).slice(0, PANEL_MAX.modules)
+    .map(n => n >= 0 ? circuits[int(n, 0, circuits.length - 1)].id : modules[int(-1 - n, 0, modules.length - 1)].id));
+  return { modules, rails };
+}
 // Données venues d'un lien : tout est vérifié, rien n'est repris tel quel
 function unpackHouse(o){
   const int = (v, min, max) => { if (!Number.isInteger(v) || v < min || v > max) throw new Error('valeur invalide'); return v; };
@@ -1961,9 +2058,9 @@ function unpackHouse(o){
   const circuits = (Array.isArray(o.c) ? o.c : []).slice(0, CIRCUIT_MAX.count).map(a => {
     const amps = int(Array.isArray(a) ? a[1] : NaN, 1, 100);
     if (!AMPS.includes(amps)) throw new Error('calibre invalide');
-    return { id: uid('c'), name: str(a[0]).slice(0, CIRCUIT_MAX.name) || 'Circuit', amps };
+    return { id: uid('c'), name: str(a[0]).slice(0, CIRCUIT_MAX.name) || 'Circuit', amps, use: own(BREAKER_USES, a[2]) ? a[2] : 'autre' };
   });
-  const cids = circuits.map(c => c.id), sids = [];
+  const cids = circuits.map(c => c.id), sids = [], panel = unpackPanel(o, circuits, int);
   const rooms = o.r.slice(0, SHARE_MAX.rooms).map(r => {
     const p = Array.isArray(r && r.p) ? r.p.slice(0, SHARE_MAX.pts * 2) : [], pts = [];
     for (let k = 0; k + 1 < p.length; k += 2) pts.push([int(p[k], -1e7, 1e7) / MM, int(p[k+1], -1e7, 1e7) / MM]);
@@ -1979,7 +2076,7 @@ function unpackHouse(o){
     const A = rooms[int(a[0], 0, rooms.length - 1)], B = rooms[int(a[2], 0, rooms.length - 1)];
     joints[jointKey(A.id, int(a[1], 0, A.pts.length - 1), B.id, int(a[3], 0, B.pts.length - 1))] = { off: true };
   });
-  return ensureLevels({ id: uid('h'), name: str(o.n) || 'Logement partagé', levels, rooms, joints, circuits, budget: unpackBudget(o.b, rooms, int), date: Date.now() });
+  return ensureLevels({ id: uid('h'), name: str(o.n) || 'Logement partagé', levels, rooms, joints, circuits, ...panel, budget: unpackBudget(o.b, rooms, int), date: Date.now() });
 }
 function unpackItem(a, n, int, cids){
   if (!Array.isArray(a)) return null;
@@ -2179,7 +2276,7 @@ function pageSVG(h, lvl, k, n, lay, date){
 }
 // Planche des circuits : un tableau sur toute la largeur, les repères renvoient aux plans
 function circuitsPageSVG(h, k, n, date){
-  const P = PDF, x0 = 15, x1 = P.W - 15, y1 = P.H - P.m, rowH = 6.2, e = escapeHtml, tags = circuitTags(h), m = findMeter(h);
+  const P = PDF, x0 = 15, x1 = P.W - 15, y1 = P.H - P.m, rowH = 6.2, e = escapeHtml, tags = circuitTags(h), rtags = rcdTags(h), m = findMeter(h);
   const cols = [[x0, 'Repère'], [x0 + 16, 'Circuit'], [x0 + 76, 'Disjoncteur'], [x0 + 100, 'Points'], [x0 + 116, 'Appareils et pièces']];
   let y = 40, g = `<text class="pg-lab" x="${x0}" y="${y - 6}">TABLEAU DES CIRCUITS</text>`
     + cols.map(([x, lab]) => `<text class="pg-cellb" x="${x}" y="${y}">${lab}</text>`).join('')
@@ -2190,7 +2287,7 @@ function circuitsPageSVG(h, k, n, date){
     const devs = circuitDevices(h, c.id), rooms = [...new Set(devs.map(d => d.room.name))];
     const what = devs.length ? `${circuitSummary(devs)} – ${rooms.join(', ')}` : 'Aucun appareil raccordé';
     g += `<text class="pg-cellb" x="${x0}" y="${y}">${tags.get(c.id)}</text><text class="pg-cell" x="${x0 + 16}" y="${y}">${e(trunc(c.name, 34))}</text>`
-       + `<text class="pg-cell" x="${x0 + 76}" y="${y}">${c.amps} A</text><text class="pg-cell" x="${x0 + 100}" y="${y}">${devs.length}</text>`
+       + `<text class="pg-cell" x="${x0 + 76}" y="${y}">${c.amps} A${rcdOf(h, c.id) ? ' · ' + rtags.get(rcdOf(h, c.id).id) : ''}</text><text class="pg-cell" x="${x0 + 100}" y="${y}">${devs.length}</text>`
        + `<text class="pg-cell" x="${x0 + 116}" y="${y}">${e(trunc(what, 110))}</text>`
        + `<line class="pg-thin" x1="${x0}" y1="${y + 1.8}" x2="${x1}" y2="${y + 1.8}" stroke-dasharray=".6 .6"/>`;
   });
@@ -2203,7 +2300,7 @@ function circuitsPageSVG(h, k, n, date){
     <text class="pg-title" x="${x0}" y="${P.m + 9}">CIRCUITS ÉLECTRIQUES</text>
     <text class="pg-sub" x="${x0}" y="${P.m + 13.5}">${e(trunc(h.name, 50))} · ${e(meter)} · ${h.circuits.length} circuit${h.circuits.length > 1 ? 's' : ''}</text>
     ${g}
-    <text class="pg-note" x="${x0}" y="${y1 - 2.5}">Repères C1, C2… reportés à côté de chaque appareil sur les plans. Planche ${k + 1} / ${n}, ${date}.</text></svg>`;
+    <text class="pg-note" x="${x0}" y="${y1 - 2.5}">Repères C1, C2… reportés à côté de chaque appareil sur les plans ; ID1, ID2… : interrupteur différentiel 30 mA en amont. Planche ${k + 1} / ${n}, ${date}.</text></svg>`;
 }
 // svg2pdf ignore les variables CSS : on fige les styles calculés en attributs
 function inlineStyles(svg, fonts){
@@ -2358,7 +2455,8 @@ $('#demoBtn').addEventListener('click', () => {
       newBudgetItem('peinture', { name: 'Repeindre le salon', price: 42.9, labour: 18, sel: ['da0|w0', 'da0|w2', 'da0|w3'] }),
       newBudgetItem('sol', { name: 'Parquet de la chambre', price: 45, labour: 25, sel: ['da3|f'] }),
       newBudgetItem('plinthes', { name: 'Plinthes de la chambre', price: 6.5, sel: ['da3|p'] }) ] },
-    rooms: mk(SAMPLE_ROOMS, l0, 'a').concat(mk(SAMPLE_UP, l1, 'b')), circuits: SAMPLE_CIRCUITS.map(c => ({ ...c })) });
+    rooms: mk(SAMPLE_ROOMS, l0, 'a').concat(mk(SAMPLE_UP, l1, 'b')), circuits: SAMPLE_CIRCUITS.map(c => ({ ...c })),
+    modules: SAMPLE_MODULES.map(m => ({ ...m })), rails: SAMPLE_RAILS.map(r => r.slice()) });
 });
 
 function renderDraft(){
@@ -2612,10 +2710,18 @@ $('#jointList').addEventListener('change', e => {
 });
 
 /* Compteur et circuits : résumé sur le plan du logement, raccordements dans l'écran du tableau */
-function newCircuit(h, name, amps){
-  const c = { id: uid('c'), name: uniqueName(name, h.circuits.map(x => x.name)).slice(0, CIRCUIT_MAX.name), amps };
+// Nouveau disjoncteur, au bout de la rangée donnée (la dernière par défaut)
+function newCircuit(h, name, amps, use = 'autre', rail = h.rails.length - 1){
+  const c = { id: uid('c'), name: uniqueName(name, h.circuits.map(x => x.name)).slice(0, CIRCUIT_MAX.name), amps, use };
   h.circuits = h.circuits.concat(c);
+  h.rails = h.rails.map((r, i) => i === rail ? r.concat(c.id) : r); ensurePanel(h);
   return c;
+}
+function newModule(h, kind, rail){
+  const m = { id: uid('m'), kind, ...(kind === 'rcd' ? { amps: 40, rtype: 'A' } : {}) };
+  h.modules = h.modules.concat(m);
+  h.rails = h.rails.map((r, i) => i === rail ? r.concat(m.id) : r); ensurePanel(h);
+  return m;
 }
 function circuitSummary(devs){
   const n = {}; devs.forEach(({ it }) => { n[it.type] = (n[it.type] || 0) + 1; });
@@ -2625,6 +2731,66 @@ const findCircuit = id => house.circuits.find(c => c.id === id);
 const wiredDevices = h => h.rooms.flatMap(r => (r.items || []).filter(isWired).map(it => ({ room: r, it })));
 const isLinked = (h, it) => h.circuits.some(c => c.id === it.circuit);
 const plural = (n, w) => `${n} ${w}${n > 1 ? 's' : ''}`;
+/* Rangées du tableau : h.rails liste, rangée par rangée, les identifiants des disjoncteurs (h.circuits) et des autres
+   modules (h.modules). Les repères C1, C2… suivent l'ordre du tableau ; un disjoncteur est protégé par le
+   dernier interrupteur différentiel placé avant lui sur sa rangée. */
+function ensurePanel(h){
+  if (!Array.isArray(h.modules)) h.modules = [];
+  const ids = new Set([...h.circuits, ...h.modules].map(x => x.id)), seen = new Set();
+  let rails = (Array.isArray(h.rails) ? h.rails : []).map(r => (Array.isArray(r) ? r : []).filter(id => ids.has(id) && !seen.has(id) && seen.add(id)));
+  const loose = [...h.circuits, ...h.modules].map(x => x.id).filter(id => !seen.has(id));
+  if (!rails.length) for (let i = 0; i < loose.length; i += BRK_PER_RAIL) rails.push(loose.slice(i, i + BRK_PER_RAIL)); // anciens tableaux : 6 par rangée
+  else if (loose.length) rails[rails.length - 1] = rails[rails.length - 1].concat(loose);
+  h.rails = rails.length ? rails : [[]];
+  const order = new Map(h.rails.flat().map((id, i) => [id, i]));
+  h.circuits = h.circuits.slice().sort((a, b) => order.get(a.id) - order.get(b.id));
+  return h;
+}
+const findModule = (h, id) => h.modules.find(m => m.id === id);
+const rcdTags = h => new Map(h.rails.flat().map(id => findModule(h, id)).filter(m => m && m.kind === 'rcd').map((m, i) => [m.id, 'ID' + (i + 1)]));
+const railOf = (h, id) => h.rails.findIndex(r => r.includes(id));
+function rcdOf(h, id){
+  const r = h.rails[railOf(h, id)] || [];
+  for (let k = r.indexOf(id) - 1; k >= 0; k--){ const m = findModule(h, r[k]); if (m && m.kind === 'rcd') return m; }
+  return null;
+}
+// Disjoncteurs protégés par un différentiel : ceux qui le suivent sur sa rangée, jusqu'au différentiel suivant
+function rcdBreakers(h, id){
+  const r = h.rails[railOf(h, id)] || [], out = [];
+  for (let k = r.indexOf(id) + 1; k < r.length; k++){
+    const m = findModule(h, r[k]); if (m && m.kind === 'rcd') break;
+    const c = h.circuits.find(x => x.id === r[k]); if (c) out.push(c);
+  }
+  return out;
+}
+// Conseils de la NF C 15-100 pour un disjoncteur (repères usuels, pas un diagnostic)
+function breakerAdvice(h, c){
+  const u = BREAKER_USES[c.use], devs = circuitDevices(h, c.id), n = devs.length, rcd = rcdOf(h, c.id), out = [];
+  if (!rcd) out.push('Pas d’interrupteur différentiel avant lui sur sa rangée : chaque circuit doit être protégé en 30 mA.');
+  if (!u) return out;
+  if (u.fixed && c.amps !== u.amps) out.push(`Calibre conseillé pour ${u.label.toLowerCase()} : ${u.amps} A.`);
+  if (u.one && n > 1) out.push('Circuit spécialisé : un seul appareil sur ce disjoncteur.');
+  const pts = u.points ? devs.filter(d => u.points.includes(d.it.type)).length : n;
+  if (u.max && pts > u.max(c.amps)) out.push(`${u.max(c.amps)} points au plus sur un circuit ${u.label.toLowerCase()} de ${c.amps} A.`);
+  if (u.typeA && rcd && rcd.rtype === 'AC') out.push(`${u.label} : différentiel de type A conseillé (ici type AC).`);
+  return out;
+}
+function moduleAdvice(h, m){
+  if (m.kind !== 'rcd') return [];
+  const n = rcdBreakers(h, m.id).length;
+  return n > RCD_MAX ? [`${n} circuits derrière ce différentiel : ${RCD_MAX} au plus.`] : [];
+}
+// Déplace un module : ← et → passent d'une rangée à l'autre aux extrémités, ↑ et ↓ gardent la position
+function moveModule(h, id, dir){
+  const ri = railOf(h, id), rails = h.rails.map(r => r.slice()), r = rails[ri], i = r.indexOf(id);
+  r.splice(i, 1);
+  if (dir === 'left' && i > 0) r.splice(i - 1, 0, id);
+  else if (dir === 'right' && i < r.length) r.splice(i + 1, 0, id);
+  else if (dir === 'left' || dir === 'up'){ if (ri === 0) return false; rails[ri - 1].splice(dir === 'left' ? rails[ri - 1].length : Math.min(i, rails[ri - 1].length), 0, id); }
+  else { if (ri === rails.length - 1) return false; rails[ri + 1].splice(dir === 'right' ? 0 : Math.min(i, rails[ri + 1].length), 0, id); }
+  h.rails = rails; ensurePanel(h);
+  return true;
+}
 function meterPlace(h, m){
   const l = h.levels.find(x => x.id === m.room.levelId);
   return m.room.name + (h.levels.length > 1 && l ? ', ' + l.name.toLowerCase() : '');
@@ -2637,41 +2803,87 @@ function renderCircuits(){
 $('#openPanel').addEventListener('click', () => goPanel());
 
 /* Écran du tableau : choisir un disjoncteur, puis toucher sur le plan les appareils qu'il alimente */
-const BRK_PER_RAIL = 6;
-let armed = null; // disjoncteur actif
+let armed = null, selMod = null, addRail = null; // disjoncteur actif, autre module choisi, rangée où ajouter
 function goPanel(){
   if (!house) return;
   houseEditing = false; arranging = false; selIdx = null; aView = null; editing = false;
-  $('#panelPlan')._zoom = null;
+  $('#panelPlan')._zoom = null; selMod = null; addRail = null;
   renderPanel(); show('#panel'); drawIn($('#panelPlan'), levelRooms(house).length);
 }
 const METER_SVG = '<svg viewBox="0 0 44 52" aria-hidden="true"><rect x="1" y="1" width="42" height="50" rx="2"/><rect x="7" y="8" width="30" height="14"/><text x="22" y="18.6">kWh</text><circle cx="22" cy="36" r="6"/><path d="M22 36l3-3"/></svg>';
-function breakerHTML(c, tag, n, on){
-  return `<button class="brk" data-brk="${c.id}" aria-pressed="${on}" aria-label="${tag}, ${escapeHtml(c.name)}, ${c.amps} A, ${plural(n, 'appareil')}">`
-    + `<span class="mod"><span class="tg">${tag}</span><span class="lever"></span><span class="amp">${c.amps} A</span></span><span class="nm">${escapeHtml(c.name)}</span></button>`;
+function breakerHTML(h, c, tag, n, on){
+  const warn = breakerAdvice(h, c).length, u = BREAKER_USES[c.use];
+  return `<button class="brk" data-brk="${c.id}" aria-pressed="${on}" aria-label="${tag}, ${escapeHtml(c.name)}, ${c.amps} A, ${plural(n, 'appareil')}${warn ? ', à vérifier' : ''}">`
+    + `<span class="mod"><span class="tg">${tag}</span><span class="lever"></span><span class="amp">${c.amps} A</span>${warn ? '<i class="warn" aria-hidden="true">!</i>' : ''}</span>`
+    + `<span class="nm">${escapeHtml(c.name || (u ? u.label : ''))}</span></button>`;
+}
+function moduleHTML(h, m, rtags){
+  const k = MODULE_KINDS[m.kind], rcd = m.kind === 'rcd', warn = moduleAdvice(h, m).length;
+  const tag = rcd ? rtags.get(m.id) : k.short;
+  return `<button class="brk${k.w > 1 ? ' w2' : ''}${rcd ? ' rcd' : ' aux'}" data-mod="${m.id}" aria-pressed="${selMod === m.id}" aria-label="${tag}, ${escapeHtml(m.name || k.label)}${rcd ? `, ${m.amps} A, type ${m.rtype}` : ''}">`
+    + `<span class="mod"><span class="tg">${tag}</span>${rcd ? '<span class="lever"></span><span class="amp">' + m.amps + ' A · ' + m.rtype + '</span><span class="ma">30 mA</span>' : '<span class="lever"></span>'}${warn ? '<i class="warn" aria-hidden="true">!</i>' : ''}</span>`
+    + `<span class="nm">${escapeHtml(m.name || k.name)}</span></button>`;
 }
 function renderBoard(h, tags){
-  const m = findMeter(h);
-  const mods = h.circuits.map(c => breakerHTML(c, tags.get(c.id), circuitDevices(h, c.id).length, armed === c.id));
-  if (h.circuits.length < CIRCUIT_MAX.count) mods.push('<button class="brk add" data-brkadd aria-label="Ajouter un disjoncteur"><span class="mod">+</span><span class="nm">Ajouter</span></button>');
-  const rails = [];
-  for (let i = 0; i < mods.length; i += BRK_PER_RAIL) rails.push(`<div class="rail">${mods.slice(i, i + BRK_PER_RAIL).join('')}</div>`);
+  const m = findMeter(h), rtags = rcdTags(h), full = h.circuits.length + h.modules.length >= PANEL_MAX.modules;
+  const rails = h.rails.map((r, i) => {
+    const mods = r.map(id => { const c = h.circuits.find(x => x.id === id); return c ? breakerHTML(h, c, tags.get(c.id), circuitDevices(h, c.id).length, armed === c.id) : moduleHTML(h, findModule(h, id), rtags); });
+    const w = r.reduce((s, id) => { const x = findModule(h, id); return s + (x ? MODULE_KINDS[x.kind].w : 1); }, 0);
+    return `<div class="railh"><span class="lab">Rangée ${i + 1}</span><span class="rw">${plural(w, 'module')}</span>${!r.length && h.rails.length > 1 ? `<button class="mini" data-raildel="${i}">Supprimer</button>` : ''}</div>`
+      + `<div class="rail">${mods.join('')}${full ? '' : `<button class="brk add" data-addto="${i}" aria-pressed="${addRail === i}" aria-label="Ajouter un module sur la rangée ${i + 1}"><span class="mod">+</span><span class="nm">Ajouter</span></button>`}</div>`;
+  });
   $('#board').innerHTML = `<div class="meter">${METER_SVG}<div><b>Compteur</b><span>${m ? escapeHtml(meterPlace(h, m))
-    : 'Non placé : ajoutez « Compteur électrique » dans la pièce où il se trouve.'}</span></div></div>${rails.join('')}`;
+    : 'Non placé : ajoutez « Compteur électrique » dans la pièce où il se trouve.'}</span></div></div>${rails.join('')}`
+    + (h.rails.length < PANEL_MAX.rails ? '<div class="row" style="margin-top:var(--s2)"><button class="mini" data-railadd>Ajouter une rangée</button></div>' : '');
 }
+// Palette d'ajout : les disjoncteurs par usage (avec leur calibre conseillé), puis les autres modules
+function renderAddPalette(){
+  $('#brkAdd').classList.toggle('hidden', addRail == null);
+  if (addRail == null) return;
+  $('#brkAddTitle').textContent = `Ajouter sur la rangée ${addRail + 1}`;
+  $('#brkAddUses').innerHTML = Object.entries(BREAKER_USES).map(([k, u]) => `<button class="bchip" data-adduse="${k}">${u.label} <small>${u.amps} A</small></button>`).join('');
+  $('#brkAddMods').innerHTML = Object.entries(MODULE_KINDS).map(([k, m]) => `<button class="bchip" data-addkind="${k}">${m.label}</button>`).join('');
+}
+const optionsHTML = (list, cur, lab = v => v) => list.map(v => `<option value="${v}"${v === cur ? ' selected' : ''}>${escapeHtml(lab(v))}</option>`).join('');
+// Éditeur du module choisi : disjoncteur (usage, calibre) ou autre module (calibre et type du différentiel)
 function renderBreakerEditor(h, tags, lvl){
-  const c = armed && findCircuit(armed);
-  $('#brkEditor').classList.toggle('hidden', !c);
+  const c = armed && findCircuit(armed), m = !c && selMod && findModule(h, selMod);
+  $('#brkEditor').classList.toggle('hidden', !c && !m);
   $('#armedChip').classList.toggle('hidden', !c);
-  if (!c) return null;
-  const devs = circuitDevices(h, c.id), away = devs.filter(d => d.room.levelId !== lvl.id).length;
-  $('#brkTag').textContent = tags.get(c.id);
-  if (document.activeElement !== $('#brkName')) $('#brkName').value = c.name;
-  $('#brkAmps').innerHTML = AMPS.map(a => `<option value="${a}"${a === c.amps ? ' selected' : ''}>${a} A</option>`).join('');
-  $('#brkInfo').textContent = devs.length
-    ? `${plural(devs.length, 'point')} : ${circuitSummary(devs)}.${away ? ` Dont ${away} sur un autre niveau.` : ''}`
-    : 'Aucun appareil raccordé pour l’instant.';
-  $('#armedChip').innerHTML = `<span><b>${tags.get(c.id)}</b> ${escapeHtml(c.name)} : touchez un appareil pour le raccorder ou le retirer.</span><button class="mini" data-disarm>Terminer</button>`;
+  if (!c && !m) return null;
+  const rtags = rcdTags(h), ri = railOf(h, (c || m).id), r = h.rails[ri], i = r.indexOf((c || m).id);
+  $('#brkTag').textContent = c ? tags.get(c.id) : m.kind === 'rcd' ? rtags.get(m.id) : MODULE_KINDS[m.kind].short;
+  if (document.activeElement !== $('#brkName')) $('#brkName').value = c ? c.name : m.name || '';
+  $('#brkName').placeholder = c ? 'Nom du circuit' : MODULE_KINDS[m.kind].label;
+  $('#brkUse').classList.toggle('hidden', !c);
+  $('#brkType').classList.toggle('hidden', !m || m.kind !== 'rcd');
+  $('#brkAmps').classList.toggle('hidden', !!m && m.kind !== 'rcd');
+  if (c){
+    $('#brkUse').innerHTML = (c.use ? '' : '<option value="" selected>Usage…</option>') + optionsHTML(Object.keys(BREAKER_USES), c.use, k => BREAKER_USES[k].label);
+    $('#brkAmps').innerHTML = optionsHTML(AMPS, c.amps, a => a + ' A');
+  } else if (m.kind === 'rcd'){
+    $('#brkAmps').innerHTML = optionsHTML(RCD_AMPS, m.amps, a => a + ' A');
+    $('#brkType').innerHTML = optionsHTML(RCD_TYPES, m.rtype, t => 'Type ' + t);
+  }
+  $('#brkMove').querySelectorAll('[data-mv]').forEach(b => {
+    const d = b.dataset.mv;
+    b.disabled = d === 'left' ? i === 0 && ri === 0 : d === 'right' ? i === r.length - 1 && ri === h.rails.length - 1 : d === 'up' ? ri === 0 : ri === h.rails.length - 1;
+  });
+  let info;
+  if (c){
+    const devs = circuitDevices(h, c.id), away = devs.filter(d => d.room.levelId !== lvl.id).length, rcd = rcdOf(h, c.id);
+    info = (devs.length ? `${plural(devs.length, 'point')} : ${circuitSummary(devs)}.${away ? ` Dont ${away} sur un autre niveau.` : ''}` : 'Aucun appareil raccordé pour l’instant.')
+      + ` Rangée ${ri + 1}${rcd ? `, protégé par ${rtags.get(rcd.id)} (${rcd.amps} A, type ${rcd.rtype})` : ''}.`;
+  } else {
+    const prot = m.kind === 'rcd' ? rcdBreakers(h, m.id) : [];
+    info = `${MODULE_KINDS[m.kind].label}, rangée ${ri + 1}.` + (m.kind !== 'rcd' ? '' : prot.length
+      ? ` Protège ${prot.map(x => tags.get(x.id)).join(', ')} : les disjoncteurs qui le suivent sur sa rangée.` : ' Placez à sa droite les disjoncteurs qu’il protège.');
+  }
+  $('#brkInfo').textContent = info;
+  const adv = c ? breakerAdvice(h, c) : moduleAdvice(h, m);
+  $('#brkAdvice').innerHTML = adv.map(a => `<li>${escapeHtml(a)}</li>`).join('');
+  $('#brkAdvice').classList.toggle('hidden', !adv.length);
+  if (c) $('#armedChip').innerHTML = `<span><b>${tags.get(c.id)}</b> ${escapeHtml(c.name)} : touchez un appareil pour le raccorder ou le retirer.</span><button class="mini" data-disarm>Terminer</button>`;
   return c;
 }
 function renderPanel(){
@@ -2688,9 +2900,11 @@ function renderPanel(){
     plan.innerHTML = houseSVG(h.rooms, v, { id: 'psvg', house: h, level: lvl.id, ghost: !levelRooms(h).length, elec: true, circuit: armed, pick: true });
     plan._map = { S: v.S, pad: v.pad, ox: v.minX, oy: v.minY }; applyZoom(plan);
   }
-  renderBoard(h, tags);
+  if (selMod && !findModule(h, selMod)) selMod = null;
+  if (addRail != null && addRail >= h.rails.length) addRail = null;
+  renderBoard(h, tags); renderAddPalette();
   const c = renderBreakerEditor(h, tags, lvl);
-  $('#panelHint').textContent = !h.circuits.length ? 'Ajoutez les disjoncteurs de votre tableau, puis raccordez-leur les appareils du plan.'
+  $('#panelHint').textContent = !h.circuits.length ? 'Reproduisez votre tableau rangée par rangée : interrupteur différentiel en tête, puis les disjoncteurs qu’il protège. Raccordez ensuite les appareils du plan.'
     : c ? 'Les appareils de ce disjoncteur sont en rouge, reliés au compteur. Touchez un autre disjoncteur pour changer.'
     : 'Choisissez un disjoncteur, puis touchez sur le plan les prises, luminaires et interrupteurs qu’il alimente. Touchez un appareil pour retrouver son disjoncteur.';
   const here = wiredDevices(h).filter(d => d.room.levelId === lvl.id), free = here.filter(d => !isLinked(h, d.it));
@@ -2720,37 +2934,74 @@ function pickDevice(id){
 $('#panelPlan').addEventListener('click', e => { const t = e.target.closest('[data-item]'); if (t) pickDevice(t.dataset.item); });
 $('#freeList').addEventListener('click', e => { const b = e.target.closest('[data-free]'); if (b) pickDevice(b.dataset.free); });
 $('#board').addEventListener('click', e => {
-  if (e.target.closest('[data-brkadd]')){
-    const c = newCircuit(house, 'Circuit ' + (house.circuits.length + 1), CIRCUIT_KINDS.plug.amps);
-    armed = c.id; save(); renderPanel();
-    $('#brkName').focus(); $('#brkName').select();
-    return;
-  }
-  const b = e.target.closest('[data-brk]'); if (!b) return;
-  armed = armed === b.dataset.brk ? null : b.dataset.brk; renderPanel();
+  const t = e.target.closest('[data-addto],[data-railadd],[data-raildel],[data-brk],[data-mod]'); if (!t) return;
+  const d = t.dataset;
+  if (d.addto != null){ addRail = addRail === +d.addto ? null : +d.addto; armed = null; selMod = null; renderPanel(); return; }
+  if (d.railadd != null){ house.rails = house.rails.concat([[]]); addRail = house.rails.length - 1; armed = null; selMod = null; save(); renderPanel(); return; }
+  if (d.raildel != null){ house.rails = house.rails.filter((_, i) => i !== +d.raildel); addRail = null; ensurePanel(house); save(); renderPanel(); return; }
+  addRail = null;
+  if (d.brk){ armed = armed === d.brk ? null : d.brk; selMod = null; }
+  else { selMod = selMod === d.mod ? null : d.mod; armed = null; }
+  renderPanel();
 });
+$('#brkAdd').addEventListener('click', e => {
+  const t = e.target.closest('[data-adduse],[data-addkind],[data-addcancel]'); if (!t || addRail == null) return;
+  const rail = addRail; addRail = null;
+  if (t.dataset.adduse){
+    const u = BREAKER_USES[t.dataset.adduse], c = newCircuit(house, u.label, u.amps, t.dataset.adduse, rail);
+    armed = c.id; selMod = null;
+    toast(`${circuitTags(house).get(c.id)} « ${c.name} » ajouté sur la rangée ${rail + 1}`);
+  } else if (t.dataset.addkind){
+    const m = newModule(house, t.dataset.addkind, rail); selMod = m.id; armed = null;
+  }
+  save(); renderPanel();
+});
+$('#brkMove').addEventListener('click', e => {
+  const b = e.target.closest('[data-mv]'), id = armed || selMod; if (!b || !id) return;
+  if (!moveModule(house, id, b.dataset.mv)) return;
+  save(); renderPanel();
+  const c = findCircuit(id); if (c) toast(`Maintenant ${circuitTags(house).get(id)}, rangée ${railOf(house, id) + 1}`);
+});
+// Usage choisi : calibre conseillé, et nom repris s'il n'avait pas été personnalisé
+$('#brkUse').addEventListener('change', e => {
+  const c = armed && findCircuit(armed), u = BREAKER_USES[e.target.value]; if (!c || !u) return;
+  const old = BREAKER_USES[c.use], generic = !c.name.trim() || (old && c.name === old.label) || /^Circuit \d+$/.test(c.name);
+  c.use = e.target.value; c.amps = u.amps;
+  if (generic) c.name = uniqueName(u.label, house.circuits.filter(x => x !== c).map(x => x.name)).slice(0, CIRCUIT_MAX.name);
+  save(); renderPanel();
+});
+$('#brkType').addEventListener('change', e => {
+  const m = selMod && findModule(house, selMod); if (!m || !RCD_TYPES.includes(e.target.value)) return;
+  m.rtype = e.target.value; save(); renderPanel();
+});
+const selectedModule = () => (armed && findCircuit(armed)) || (selMod && findModule(house, selMod)) || null;
 $('#brkName').addEventListener('input', e => {
-  const c = armed && findCircuit(armed); if (!c) return;
-  c.name = e.target.value.slice(0, CIRCUIT_MAX.name); save();
-  const nm = document.querySelector(`[data-brk="${c.id}"] .nm`); if (nm) nm.textContent = c.name;
+  const x = selectedModule(); if (!x) return;
+  x.name = e.target.value.slice(0, CIRCUIT_MAX.name); save();
+  const nm = document.querySelector(`[data-brk="${x.id}"] .nm, [data-mod="${x.id}"] .nm`); if (nm) nm.textContent = x.name;
 });
 $('#brkName').addEventListener('change', e => {
-  const c = armed && findCircuit(armed); if (!c) return;
-  c.name = e.target.value.trim().slice(0, CIRCUIT_MAX.name) || 'Circuit'; e.target.blur(); save(); renderPanel();
+  const x = selectedModule(); if (!x) return;
+  x.name = e.target.value.trim().slice(0, CIRCUIT_MAX.name) || (x.kind ? '' : 'Circuit'); e.target.blur(); save(); renderPanel();
 });
 $('#brkAmps').addEventListener('change', e => {
-  const c = armed && findCircuit(armed), a = +e.target.value; if (!c || !AMPS.includes(a)) return;
-  c.amps = a; save(); renderPanel();
+  const x = selectedModule(), a = +e.target.value; if (!x || !(x.kind ? RCD_AMPS : AMPS).includes(a)) return;
+  x.amps = a; save(); renderPanel();
 });
 $('#brkDel').addEventListener('click', () => {
+  const m = selMod && findModule(house, selMod);
+  if (m){
+    if (!confirm(`Supprimer ${MODULE_KINDS[m.kind].label.toLowerCase()} ?`)) return;
+    house.modules = house.modules.filter(x => x !== m); selMod = null; ensurePanel(house); save(); renderPanel(); return;
+  }
   const c = armed && findCircuit(armed); if (!c) return;
   const n = circuitDevices(house, c.id).length, tag = circuitTags(house).get(c.id);
   if (!confirm(`Supprimer ${tag} « ${c.name} » ?${n ? ` Ses ${plural(n, 'appareil')} ne seront plus raccordés.` : ''}`)) return;
   house.circuits = house.circuits.filter(x => x !== c);
   house.rooms.forEach(r => { r.items = (r.items || []).map(it => it.circuit === c.id ? { ...it, circuit: null } : it); });
-  armed = null; save(); renderPanel();
+  armed = null; ensurePanel(house); save(); renderPanel();
 });
-const disarm = () => { armed = null; renderPanel(); };
+const disarm = () => { armed = null; selMod = null; renderPanel(); };
 $('#brkDone').addEventListener('click', disarm);
 $('#armedChip').addEventListener('click', e => { if (e.target.closest('[data-disarm]')) disarm(); });
 $('#panelLevels').addEventListener('click', e => {
@@ -3018,7 +3269,7 @@ $('#itemList').addEventListener('change', e => {
   if (d.circ){
     let id = e.target.value || null;
     if (id === NEW_CIRCUIT){
-      const k = CIRCUIT_KINDS[DEVICES[it.type].circ], c = newCircuit(house, `${k.name} ${roomRef.name}`, k.amps);
+      const k = CIRCUIT_KINDS[DEVICES[it.type].circ], c = newCircuit(house, `${k.name} ${roomRef.name}`, k.amps, k.use);
       id = c.id; toast(`${circuitTags(house).get(id)} « ${c.name} » créé : renommez-le dans le tableau`);
     }
     it.circuit = house.circuits.some(c => c.id === id) ? id : null;

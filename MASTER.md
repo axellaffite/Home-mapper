@@ -152,6 +152,7 @@ No blurred shadows outside the AR overlay.
   breaker modules (36×76px, 1.5px `--elec` outline, `--r1`) over a double `--construct` DIN rail. The
   active breaker turns pencil with `--pencil-wash` fill; its devices turn pencil on the plan and are joined
   to the meter by a dashed pencil line. "Add" module: dashed `--ink-soft`.
+- **Panel rails**: one row per real rail, never wrapping (it scrolls sideways); breakers 1 module wide, residual-current switches 2 modules (`ID1`, rating · type, 30 mA). A pencil `!` dot on a module flags an NF C 15-100 reminder, listed under the editor on a `--pencil-wash` band with a pencil left rule.
 - **Circuit tag**: C1, C2… in letter 600 8px `--elec` next to each device; `?` in `--ink-soft` for an
   unconnected device in the panel view.
 - **Finish swatch**: 22px square, 1px ink border filled with the noted colour; dashed `--construct` border when no colour. User colours appear only inside swatches and on 3D surfaces, never on UI chrome.
