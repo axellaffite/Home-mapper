@@ -118,6 +118,43 @@ h3{font-size:16px;font-weight:600;letter-spacing:.02em}
 .height{display:flex;align-items:center;gap:10px;margin:var(--s4) 0 var(--s1);font-size:15px}
 .height input{width:90px;font:600 20px var(--f-letter);font-variant-numeric:tabular-nums;padding:var(--s1) 0;border:0;border-bottom:1px solid var(--ink-soft);border-radius:0;background:transparent;color:var(--ink)}
 .height select,.addbar select{font:500 15px var(--f-text);padding:0 var(--s2);min-height:44px;border:1px solid var(--ink-soft);border-radius:var(--r1);background:var(--sheet);color:var(--ink)}
+/* Finitions */
+.fsw{width:22px;height:22px;flex:none;border:1px solid var(--ink);background:var(--sheet)}
+.fsw.none{border:1px dashed var(--construct);background:transparent}
+.finishes li,.shop li{flex-wrap:wrap;gap:6px var(--s3)}
+.finishes li.on{background:var(--pencil-wash);box-shadow:calc(var(--s2) * -1) 0 0 var(--pencil-wash),var(--s2) 0 0 var(--pencil-wash)}
+.shop .open{cursor:default}
+.shop .qty{display:block;color:var(--ink);font:600 var(--fs-note) var(--f-letter);font-variant-numeric:tabular-nums}
+.fin-form{flex-basis:100%;display:flex;flex-direction:column;gap:var(--s2);padding:0 0 var(--s2) 34px}
+.ff{display:grid;grid-template-columns:84px minmax(0,1fr);align-items:center;gap:var(--s2);font-size:var(--fs-note);color:var(--ink-soft)}
+.ff input:not([type=color]),.ff textarea{width:100%;font:500 var(--fs-body) var(--f-text);color:var(--ink);padding:var(--s1) 0;border:0;border-bottom:1px solid var(--ink-soft);border-radius:0;background:transparent}
+.ff textarea{resize:vertical;min-height:44px}
+.ff input:focus-visible,.ff textarea:focus-visible{outline:none;border-bottom:2px solid var(--pencil)}
+.ff select{font:500 15px var(--f-text);padding:0 var(--s2);min-height:44px;border:1px solid var(--ink-soft);border-radius:var(--r1);background:var(--sheet);color:var(--ink);min-width:0}
+.ff input[type=color]{width:52px;height:36px;padding:2px;border:1px solid var(--ink-soft);border-radius:var(--r1);background:var(--sheet)}
+.crow{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.fin-actions{display:flex;gap:var(--s2);flex-wrap:wrap;align-items:center;margin-top:var(--s1)}
+.budget li{flex-wrap:wrap;gap:6px var(--s3)}
+.budget li.on{background:var(--pencil-wash);box-shadow:calc(var(--s2) * -1) 0 0 var(--pencil-wash),var(--s2) 0 0 var(--pencil-wash)}
+.nin{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ff .nin input{width:96px;font:600 var(--fs-fig) var(--f-letter);font-variant-numeric:tabular-nums}
+.bcalc{margin:var(--s1) 0 0;padding:var(--s2) var(--s3);border:1px solid var(--hair);background:var(--sheet);color:var(--ink);font:500 var(--fs-note)/1.45 var(--f-letter);font-variant-numeric:tabular-nums}
+.bhint{margin:var(--s2) 0 0}
+.bpl{margin:var(--s3) 0 0}
+.bmore{margin-top:var(--s2);border-top:1px dotted var(--construct)}
+.bmore summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font:600 var(--fs-label) var(--f-letter);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.bpick{display:flex;flex-direction:column;gap:var(--s1);padding:var(--s2) 0;border-top:1px dotted var(--construct)}
+.bpr{font-weight:600;color:var(--ink);font-size:var(--fs-note)}
+.bchips{display:flex;flex-wrap:wrap;gap:6px}
+.bchip{min-height:40px;padding:0 10px;border:1px solid var(--ink-soft);border-radius:var(--r1);background:var(--sheet);color:var(--ink);font:600 13px var(--f-letter);letter-spacing:.04em;transition:background-color var(--t-press) var(--e-draw),color var(--t-press) var(--e-draw)}
+.bchip small{font-weight:400;opacity:.75;font-variant-numeric:tabular-nums}
+.bchip[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+#budgetBox .addbar select{flex:1}
+.sheet .bsel-w{stroke:var(--pencil);stroke-width:5;stroke-linecap:square}
+.sheet .bsel-f{fill:var(--pencil-wash);stroke:var(--pencil);stroke-width:1;stroke-dasharray:4 3}
+.sheet .bsel-p{fill:none;stroke:var(--pencil);stroke-width:2.5;stroke-dasharray:7 4}
+.sheet.picking svg{cursor:crosshair}
+.fin-actions select{font:500 15px var(--f-text);padding:0 var(--s2);min-height:40px;border:1px solid var(--ink-soft);border-radius:var(--r1);background:var(--sheet);color:var(--ink)}
 .walls{list-style:none;padding:0;margin:var(--s2) 0 0;columns:2;column-gap:var(--s5);font-size:15px}
 .walls li{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px dotted var(--construct);break-inside:avoid}
 .walls li b{font:600 17px var(--f-letter);font-variant-numeric:tabular-nums}
@@ -148,6 +185,16 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 .zoom button{width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ink-soft);border-radius:var(--r1);background:var(--sheet);color:var(--ink);font:500 22px/1 var(--f-letter)}
 .zoom svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:square}
 .sheet svg{-webkit-user-select:none;user-select:none}
+/* Bascule 2D / 3D et vue 3D du logement */
+.viewmode{position:absolute;top:10px;left:10px;z-index:2;display:flex;border:1px solid var(--ink-soft);border-radius:var(--r1);background:var(--sheet)}
+.viewmode button{min-width:48px;min-height:40px;border:0;border-radius:0;background:transparent;color:var(--ink);font:600 14px var(--f-letter);letter-spacing:.08em;transition:background-color var(--t-press) var(--e-draw),color var(--t-press) var(--e-draw)}
+.viewmode button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink)}
+.sheet.v3d{position:relative;padding:0;overflow:hidden}
+.sheet.v3d canvas{display:block;width:100%;height:min(70vh,520px);touch-action:none;cursor:grab}
+.sheet.v3d canvas:active{cursor:grabbing}
+.sheet.v3d canvas:focus-visible{outline:2px solid var(--pencil);outline-offset:-2px}
+.v3-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.v3-labels span{position:absolute;left:0;top:0;padding:1px var(--s1);background:var(--sheet);border:1px solid var(--hair);color:var(--ink);font:600 var(--fs-label)/1.2 var(--f-letter);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
 .sheet.zoomed svg{cursor:grab}
 /* Grand écran : plan sur toute la hauteur, panneau latéral à droite */
 @media (min-width:1024px){
@@ -155,7 +202,7 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
   .screen .head{grid-column:2;grid-row:1;min-width:0}
   .screen .stage{grid-column:1;grid-row:1 / 3;min-height:0;display:flex}
   .screen .stage .sheet{flex:1;position:relative;overflow:hidden}
-  .screen .stage .sheet svg{width:100%;height:100%;min-width:0}
+  .screen .stage .sheet svg,.screen .stage .sheet.v3d canvas{width:100%;height:100%;min-width:0}
   .screen .stage .sheet .emptyplan{position:absolute;left:0;right:0;bottom:16px}
   .screen .sidebar{grid-column:2;grid-row:2;min-height:0;overflow-x:hidden;overflow-y:auto;margin:0 calc(var(--s2) * -1);padding:0 var(--s2) 24px}
   .screen .name{font-size:28px;margin-bottom:10px}
@@ -394,11 +441,15 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
       <button data-z="in" aria-label="Zoomer">+</button><button data-z="out" aria-label="Dézoomer">−</button>
       <button data-z="fit" aria-label="Recadrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
     </div>
+  <div class="viewmode" id="viewMode" role="group" aria-label="Vue du plan">
+    <button data-v="2d" aria-pressed="true">2D</button><button data-v="3d" aria-pressed="false">3D</button>
+  </div>
  </div>
  <div class="sidebar">
   <div class="toolbar" id="houseTools">
-    <label class="chk"><input type="checkbox" id="dimsChk"> Cotes</label>
-    <label class="chk"><input type="checkbox" id="elecChk" checked> Électricité</label>
+    <label class="chk" data-2d><input type="checkbox" id="dimsChk"> Cotes</label>
+    <label class="chk" data-2d><input type="checkbox" id="elecChk" checked> Électricité</label>
+    <label class="chk hidden" id="allLvl"><input type="checkbox" id="allChk"> Tous les niveaux</label>
   </div>
   <div class="legend" id="legend"></div>
   <div class="arrange hidden" id="houseEditPanel">
@@ -433,6 +484,21 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
   </section>
   <h2>Pièces</h2>
   <ul class="list" id="roomList"></ul>
+  <div class="hidden" id="shopBox">
+    <h2>Finitions et achats</h2>
+    <p class="status" style="margin-top:0">Les produits identiques de tout le logement sont regroupés, avec la quantité totale à prévoir.</p>
+    <ul class="list shop" id="shopList"></ul>
+    <div class="row"><button class="btn btn-ghost" id="shopCopy">Copier la liste d’achats</button></div>
+  </div>
+  <div class="hidden" id="budgetBox">
+    <h2>Budget travaux</h2>
+    <p class="status" style="margin-top:0">Ajoutez ce que vous voulez changer, choisissez les surfaces et entrez vos prix : quantités et coûts se calculent tout seuls.</p>
+    <ul class="list budget" id="budgetList"></ul>
+    <div class="addbar"><select id="budgetAdd" aria-label="Ajouter un poste"></select></div>
+    <label class="height">Imprévus <input type="number" id="budgetExtra" step="1" min="0" max="100" inputmode="decimal"> %</label>
+    <div class="stats" id="budgetTotal"></div>
+    <div class="row"><button class="btn btn-ghost" id="budgetCopy">Copier le budget</button></div>
+  </div>
   <div class="row" style="justify-content:space-between">
     <button class="btn-danger" id="delLevel">Supprimer ce niveau</button>
     <button class="btn-danger" id="delHouse">Supprimer ce logement</button>
@@ -476,6 +542,9 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
   <label class="height">Hauteur sous plafond
     <input type="number" id="heightIn" step="0.01" min="1" max="10" inputmode="decimal"> m
   </label>
+  <h2>Finitions</h2>
+  <p class="status" style="margin-top:0">Matériau, référence et teinte de chaque surface. Les surfaces déduisent portes et fenêtres, et les quantités à prévoir se calculent toutes seules.</p>
+  <ul class="list finishes" id="finishList"></ul>
   <h2>Longueur des murs</h2>
   <p class="status" style="margin-top:0">Changez une cote pour corriger un mur : il s’allonge depuis son premier coin, et le mur parallèle suivant compense.</p>
   <ul class="walls" id="walls"></ul>
@@ -564,6 +633,7 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
 </nav>
 
 <div class="ctx hidden" id="ctxMenu" role="menu"></div>
+<datalist id="dlBrand"></datalist><datalist id="dlRef"></datalist><datalist id="dlTint"></datalist>
 <div class="toast hidden" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -694,15 +764,20 @@ function findMeter(h, levelId){
   }
   return null;
 }
+// w : largeur, h : hauteur, sill : allège (hauteur depuis le sol) ; valeurs courantes, remplacées par celles relevées
 const OPENINGS = {
-  porte:       { label: 'Porte', w: 0.83 },
-  porte2:      { label: 'Porte double', w: 1.40 },
-  coulissante: { label: 'Porte coulissante', w: 0.83 },
-  fenetre:     { label: 'Fenêtre', w: 1.20 },
-  pfenetre:    { label: 'Porte-fenêtre', w: 1.40 },
-  baie:        { label: 'Baie coulissante', w: 2.00 },
-  passage:     { label: 'Passage libre', w: 0.90, m: true, open: true } // mur interrompu, sans menuiserie
+  porte:       { label: 'Porte', w: 0.83, h: 2.04 },
+  porte2:      { label: 'Porte double', w: 1.40, h: 2.04 },
+  coulissante: { label: 'Porte coulissante', w: 0.83, h: 2.04 },
+  fenetre:     { label: 'Fenêtre', w: 1.20, h: 1.25, sill: 0.90 },
+  pfenetre:    { label: 'Porte-fenêtre', w: 1.40, h: 2.15 },
+  baie:        { label: 'Baie coulissante', w: 2.00, h: 2.15 },
+  passage:     { label: 'Passage libre', w: 0.90, h: 2.04, m: true, open: true } // mur interrompu, sans menuiserie
 };
+const OPEN_MAX = { height: 10, sill: 5 };
+const hasSill = type => (OPENINGS[type] || {}).sill != null;
+const openingHeight = it => it.height != null ? it.height : (OPENINGS[it.type] || {}).h || 2.04;
+const openingSill = it => !hasSill(it.type) ? 0 : it.sill != null ? it.sill : OPENINGS[it.type].sill;
 const wallLen = (p, i) => dist(p[i], p[(i+1)%p.length]);
 function wallPoint(p, i, t){ const a = p[i], b = p[(i+1)%p.length]; return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t]; }
 function projT(p, i, q){
@@ -1062,11 +1137,11 @@ function jointB(jt, u){
 // Ouvertures des deux murs, en abscisses le long de A
 function jointHoles(jt){
   const holes = [], LA = wallLen(jt.A.pts, jt.wa), sOf = X => dot([X[0]-jt.a0[0], X[1]-jt.a0[1]], jt.ua);
-  (jt.A.items || []).forEach(it => { if (it.kind === 'opening' && it.wall === jt.wa) holes.push([Math.min(it.t0, it.t1)*LA, Math.max(it.t0, it.t1)*LA, 'A', it.type]); });
+  (jt.A.items || []).forEach(it => { if (it.kind === 'opening' && it.wall === jt.wa) holes.push([Math.min(it.t0, it.t1)*LA, Math.max(it.t0, it.t1)*LA, 'A', it.type, it]); });
   (jt.B.items || []).forEach(it => {
     if (it.kind !== 'opening' || it.wall !== jt.wb) return;
     const u0 = sOf(wallPoint(jt.B.pts, jt.wb, it.t0)), u1 = sOf(wallPoint(jt.B.pts, jt.wb, it.t1));
-    holes.push([Math.min(u0, u1), Math.max(u0, u1), 'B', it.type]);
+    holes.push([Math.min(u0, u1), Math.max(u0, u1), 'B', it.type, it]);
   });
   return holes;
 }
@@ -1112,6 +1187,13 @@ function houseLayer(rooms, v, opts){
     const sel = opts.sel && opts.sel.has(i);
     const pts = r.pts.map(T).map(q=>q.map(n=>n.toFixed(1)).join(',')).join(' ');
     polys += `<polygon data-i="${i}" class="room${sel?' sel':''}" pathLength="1" style="fill:${opts.fill || (sel ? 'var(--pencil-wash)' : 'var(--wash)')};--i:${n++}" points="${pts}"/>`;
+    if (opts.bsel){ // surfaces du poste de budget ouvert
+      if (opts.bsel.has(r.id + '|f')) polys += `<polygon class="bsel-f" pointer-events="none" points="${pts}"/>`;
+      if (opts.bsel.has(r.id + '|p')) polys += `<polygon class="bsel-p" pointer-events="none" points="${pts}"/>`;
+      r.pts.forEach((a, k) => { if (!opts.bsel.has(`${r.id}|w${k}`)) return;
+        const [x1, y1] = T(a), [x2, y2] = T(r.pts[(k + 1) % r.pts.length]);
+        polys += `<line class="bsel-w" pointer-events="none" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`; });
+    }
     if (opts.dims) labels += dimLabels(r.pts, T, 10);
     items += itemsSVG(r.pts, r.items, T, v.S, { elec: opts.elec !== false, tags, hot, pick: opts.pick });
     // Décale le nom si un luminaire est au même endroit
@@ -1139,10 +1221,16 @@ function houseSVG(rooms, v, opts = {}){
 const O = (type, wall, t0, t1, x = {}) => ({ kind:'opening', type, wall, t0, t1, swingOut:false, hingeEnd:false, ...x });
 const D = (type, wall, t, d = 0, h = null, circuit = null) => ({ kind:'device', type, wall, t, d, h, circuit });
 const SAMPLE_ROOMS = [
-  { name:'Salon', pts:[[0,0],[5.2,0],[5.2,4.1],[0,4.1]], items:[
+  { name:'Salon', pts:[[0,0],[5.2,0],[5.2,4.1],[0,4.1]], finishes:{
+    floor:{ mat:'parquet', ref:'Lames 14 × 180 mm', tint:'Chêne naturel', color:'#C49A6C' },
+    walls:{ mat:'peinture', tint:'Blanc cassé', color:'#EDE8DD', sheen:'Velours' },
+    accents:[{ wall:1, mat:'peinture', tint:'Vert sauge', color:'#9CAF88', sheen:'Mat', note:'Mur derrière le canapé' }],
+    ceiling:{ mat:'peinture', tint:'Blanc', color:'#F7F7F4', sheen:'Mat' } }, items:[
     O('fenetre',0,.3,.53), O('pfenetre',3,.25,.6), O('porte',2,.1,.26),
     D('plafonnier',0,.5,2.05,null,'c1'), D('prise',3,.8,0,.3,'c2'), D('prise',0,.12,0,.3,'c2'), D('prise',1,.7,0,.3,'c2'), D('tv',1,.3,0,.3), D('rj45',1,.38,0,.3), D('inter',2,.3,0,1.1,'c1') ] },
-  { name:'Cuisine', pts:[[5.35,0],[8.4,0],[8.4,4.1],[5.35,4.1]], items:[
+  { name:'Cuisine', pts:[[5.35,0],[8.4,0],[8.4,4.1],[5.35,4.1]], finishes:{
+    floor:{ mat:'carrelage', ref:'60 × 60 cm', tint:'Gris béton', color:'#A7A6A1' },
+    walls:{ mat:'peinture', tint:'Blanc cassé', color:'#EDE8DD', sheen:'Velours' } }, items:[
     O('fenetre',0,.3,.69), O('porte',2,.65,.85,{hingeEnd:true}),
     D('plafonnier',0,.5,2.05,null,'c1'), D('prise32',1,.5,0,.15,'c4'), D('prise',0,.12,0,1.1,'c3'), D('prise',0,.88,0,1.1,'c3'), D('inter',2,.6,0,1.1,'c1') ] },
   { name:'Couloir', pts:[[0,4.25],[8.4,4.25],[8.4,5.35],[0,5.35]], items:[
@@ -1150,7 +1238,9 @@ const SAMPLE_ROOMS = [
   { name:'Chambre', pts:[[0,5.5],[3.6,5.5],[3.6,8.9],[0,8.9]], items:[
     O('porte',0,.65,.88,{hingeEnd:true}), O('fenetre',2,.3,.63),
     D('plafonnier',0,.5,1.7,null,'c1'), D('prise',3,.3,0,.3,'c5'), D('prise',3,.7,0,.3,'c5'), D('prise',1,.5,0,.3,'c5'), D('inter',0,.6,0,1.1,'c1') ] },
-  { name:'Salle de bain', pts:[[3.75,5.5],[6.0,5.5],[6.0,7.6],[3.75,7.6]], items:[
+  { name:'Salle de bain', pts:[[3.75,5.5],[6.0,5.5],[6.0,7.6],[3.75,7.6]], finishes:{
+    floor:{ mat:'carrelage', ref:'60 × 60 cm', tint:'Gris béton', color:'#A7A6A1' },
+    walls:{ mat:'faience', ref:'20 × 20 cm', tint:'Blanc brillant', color:'#F4F4F2', note:'Sur toute la hauteur' } }, items:[
     O('coulissante',0,.1,.47), D('applique',1,.5,0,1.9,'c1'), D('prise',1,.25,0,1.1,'c5'), D('plafonnier',0,.5,1.05,null,'c1') ] },
   { name:'WC', pts:[[3.75,7.75],[6.0,7.75],[6.0,8.9],[3.75,8.9]], items:[ O('fenetre',2,.4,.6), D('plafonnier',0,.5,.55,null,'c1') ] },
   { name:'Chambre 2', pts:[[6.15,5.5],[8.4,5.5],[8.4,8.9],[6.15,8.9]], items:[
@@ -1335,10 +1425,506 @@ function attachZoom(el, isHandle, onPinch){
   el.addEventListener('click', e => { if (el._noClick){ el._noClick = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);
 }
 document.querySelectorAll('.zoom').forEach(g => g.addEventListener('click', e => {
-  const b = e.target.closest('[data-z]'), el = document.getElementById(g.dataset.for); if (!b || !el._map) return;
+  const b = e.target.closest('[data-z]'), el = document.getElementById(g.dataset.for); if (!b) return;
+  if (el._v3){ v3Zoom(b.dataset.z); return; }
+  if (!el._map) return;
   if (b.dataset.z === 'fit'){ el._zoom = null; applyZoom(el); }
   else zoomAt(el, b.dataset.z === 'in' ? ZOOM.step : 1 / ZOOM.step);
 }));
+
+/* ---------- Finitions : sol, murs, plafond ---------- */
+/* Chaque pièce note la finition de son sol, de ses murs (un mur peut différer des autres) et de son plafond.
+   Les surfaces sont calculées, ouvertures déduites, et donnent la quantité à prévoir selon le matériau.
+   on : surfaces où il se pose ; paint : en litres ; roll : m² par rouleau ; waste : part de chutes */
+const MATERIALS = {
+  peinture:  { label: 'Peinture', on: ['wall', 'ceiling', 'floor'], paint: true },
+  papier:    { label: 'Papier peint', on: ['wall', 'ceiling'], roll: 5.3 },
+  faience:   { label: 'Faïence', on: ['wall'], waste: 0.1 },
+  carrelage: { label: 'Carrelage', on: ['floor', 'wall'], waste: 0.1 },
+  parquet:   { label: 'Parquet', on: ['floor'], waste: 0.1 },
+  stratifie: { label: 'Stratifié', on: ['floor'], waste: 0.1 },
+  vinyle:    { label: 'Sol vinyle', on: ['floor'], waste: 0.1 },
+  moquette:  { label: 'Moquette', on: ['floor'], waste: 0.1 },
+  tomette:   { label: 'Tomettes', on: ['floor'], waste: 0.1 },
+  beton:     { label: 'Béton ciré', on: ['floor', 'wall'] },
+  lambris:   { label: 'Lambris', on: ['wall', 'ceiling'], waste: 0.1 },
+  enduit:    { label: 'Enduit décoratif', on: ['wall', 'ceiling'] },
+  pierre:    { label: 'Pierre ou brique', on: ['wall'], waste: 0.1 },
+  dalles:    { label: 'Dalles de plafond', on: ['ceiling'], waste: 0.05 },
+  autre:     { label: 'Autre', on: ['floor', 'wall', 'ceiling'] }
+};
+const PAINT = { coats: 2, cover: 10 }; // couches, m² par litre et par couche
+const ROLL_EXTRA = 0.1;                // raccords des lés de papier peint
+const SHEENS = ['Mat', 'Velours', 'Satin', 'Brillant'];
+const FIN_FIELDS = ['mat', 'brand', 'ref', 'tint', 'color', 'sheen', 'note'];
+const FIN_MAX = { text: 80, note: 300 };
+const FIN_SURFACES = ['floor', 'walls', 'ceiling'];
+const HEX = /^#[0-9a-f]{6}$/i;
+const surfaceKind = key => key === 'floor' ? 'floor' : key === 'ceiling' ? 'ceiling' : 'wall';
+const hasFinish = F => !!F && FIN_FIELDS.some(k => F[k]);
+const isProduct = F => !!F && ['mat', 'brand', 'ref', 'tint', 'color'].some(k => F[k]);
+// Champs vérifiés : texte borné, matériau, teinte et finition connus ; les champs vides disparaissent
+function cleanFin(F){
+  const out = {};
+  FIN_FIELDS.forEach(k => { const v = F[k]; if (typeof v === 'string' && v.trim()) out[k] = v.slice(0, k === 'note' ? FIN_MAX.note : FIN_MAX.text); });
+  if (out.mat && !own(MATERIALS, out.mat)) delete out.mat;
+  if (out.color && !HEX.test(out.color)) delete out.color;
+  if (out.sheen && !SHEENS.includes(out.sheen)) delete out.sheen;
+  if (F.wall != null) out.wall = F.wall;
+  return out;
+}
+const finSummary = F => !F ? '' : [MATERIALS[F.mat] && MATERIALS[F.mat].label, F.brand, F.ref, F.tint,
+  MATERIALS[F.mat] && MATERIALS[F.mat].paint && F.sheen].filter(Boolean).map(s => String(s).trim()).join(' · ');
+const accentOf = (r, i) => ((r.finishes || {}).accents || []).find(a => a.wall === i);
+const getFin = (r, key) => key[0] === 'a' ? accentOf(r, +key.slice(1)) : (r.finishes || {})[key];
+function setFin(r, key, patch){
+  const f = r.finishes || {};
+  if (key[0] === 'a'){ const w = +key.slice(1); r.finishes = { ...f, accents: (f.accents || []).map(a => a.wall === w ? cleanFin({ ...a, ...patch }) : a) }; }
+  else r.finishes = { ...f, [key]: cleanFin({ ...(f[key] || {}), ...patch }) };
+}
+// Surface d'un mur, ouvertures déduites à leur hauteur réelle (bornée au plafond)
+function wallArea(r, i){
+  const H = r.height || 0, p = r.pts;
+  const holes = (r.items || []).filter(o => o.kind === 'opening' && o.wall === i).reduce((s, o) => {
+    const z0 = Math.min(openingSill(o), H); return s + openingWidth(p, o) * (Math.min(z0 + openingHeight(o), H) - z0);
+  }, 0);
+  return Math.max(0, wallLen(p, i) * H - holes);
+}
+// Surfaces d'une pièce : [clé, libellé, finition, surface en m²] ; les murs différents ont la clé « a » + n° du mur
+function roomSurfaces(r){
+  const f = r.finishes || {}, p = r.pts;
+  const acc = (f.accents || []).filter(a => a.wall < p.length).sort((a, b) => a.wall - b.wall);
+  const plain = p.map((_, i) => i).filter(i => !accentOf(r, i));
+  return [
+    ['floor', 'Sol', f.floor, area(p)],
+    ['walls', acc.length ? 'Autres murs' : 'Murs', f.walls, plain.reduce((s, i) => s + wallArea(r, i), 0)],
+    ...acc.map(a => ['a' + a.wall, `Mur ${a.wall + 1}`, a, wallArea(r, a.wall)]),
+    ['ceiling', 'Plafond', f.ceiling, area(p)]
+  ];
+}
+// Plinthes : le tour de la pièce, sans les ouvertures qui descendent jusqu'au sol
+const skirting = r => Math.max(0, perimeter(r.pts) - (r.items || [])
+  .filter(o => o.kind === 'opening' && openingSill(o) < 0.01).reduce((s, o) => s + openingWidth(r.pts, o), 0));
+function finQuantity(F, s){
+  const m = F && MATERIALS[F.mat]; if (!m || s < 0.01) return '';
+  if (m.paint) return `${fmt(s * PAINT.coats / PAINT.cover, 1)} L pour ${PAINT.coats} couches`;
+  if (m.roll){ const n = Math.ceil(s * (1 + ROLL_EXTRA) / m.roll); return `${n} rouleau${n > 1 ? 'x' : ''}`; }
+  if (m.waste) return `${fmt(s * (1 + m.waste), 1)} m² avec ${Math.round(m.waste * 100)} % de chutes`;
+  return '';
+}
+// Murs ajoutés ou retirés : chaque mur différent suit le mur le plus proche de son ancien milieu
+function reprojectAccents(r, oldP, newP){
+  const f = r.finishes; if (!f || !(f.accents || []).length) return;
+  const seen = new Set();
+  r.finishes = { ...f, accents: f.accents.filter(a => a.wall < oldP.length)
+    .map(a => ({ ...a, wall: nearestWall(newP, wallPoint(oldP, a.wall, 0.5)) }))
+    .filter(a => !seen.has(a.wall) && seen.add(a.wall)) };
+}
+// Toutes les finitions notées, et les produits identiques regroupés (liste d'achats)
+const finishesOf = rooms => rooms.flatMap(r => roomSurfaces(r).filter(s => hasFinish(s[2])).map(([key, label, F, s]) => ({ r, key, label, F, s })));
+const productKey = F => [F.mat, F.brand, F.ref, F.tint, F.color, F.sheen].map(v => String(v || '').trim().toLowerCase()).join('|');
+function shoppingList(rooms){
+  const groups = new Map();
+  finishesOf(rooms).filter(x => isProduct(x.F)).forEach(x => {
+    const k = productKey(x.F);
+    if (!groups.has(k)) groups.set(k, { F: x.F, s: 0, uses: [] });
+    const g = groups.get(k); g.s += x.s; g.uses.push(`${x.r.name} (${x.label.toLowerCase()})`);
+  });
+  return [...groups.values()];
+}
+const packFin = F => hasFinish(F) ? FIN_FIELDS.map(k => F[k] || '') : 0;
+function packFinishes(r){
+  const f = r.finishes; if (!f) return undefined;
+  const s = FIN_SURFACES.map(k => packFin(f[k])), a = (f.accents || []).filter(x => x.wall < r.pts.length).map(x => [x.wall, ...FIN_FIELDS.map(k => x[k] || '')]);
+  return s.some(Boolean) || a.length ? { s, a } : undefined;
+}
+function unpackFin(a){
+  if (!Array.isArray(a)) return null;
+  const F = {}; FIN_FIELDS.forEach((k, i) => { if (typeof a[i] === 'string') F[k] = a[i]; });
+  return cleanFin(F);
+}
+function unpackFinishes(o, n, int){
+  if (!o || typeof o !== 'object') return undefined;
+  const out = {}, s = Array.isArray(o.s) ? o.s : [], seen = new Set();
+  FIN_SURFACES.forEach((k, i) => { const F = unpackFin(s[i]); if (hasFinish(F)) out[k] = F; });
+  out.accents = (Array.isArray(o.a) ? o.a : []).slice(0, n).flatMap(x => {
+    if (!Array.isArray(x)) return [];
+    const w = int(x[0], 0, n - 1); if (seen.has(w)) return [];
+    seen.add(w); return [{ ...unpackFin(x.slice(1)), wall: w }];
+  });
+  return out;
+}
+
+/* ---------- Budget travaux ---------- */
+/* Un poste est un produit ou une prestation posé sur des surfaces choisies : sols, murs, plafonds ou plinthes.
+   La quantité vient des surfaces calculées (ouvertures déduites) ; le coût = matériaux selon le mode de prix + pose.
+   Une surface se désigne par « id de la pièce|code » : f sol, c plafond, p plinthes, w2 mur 3 */
+const BUDGET_MODES = {
+  unit:   { label: 'À l’unité (pot, rouleau…)', measure: 'area' },
+  area:   { label: 'Au m²', measure: 'area' },
+  length: { label: 'Au mètre linéaire', measure: 'length' },
+  flat:   { label: 'Forfait', measure: null }
+};
+const BUDGET_PRESETS = {
+  peinture: { name: 'Peinture', mode: 'unit', unit: 'pot', cover: 25, coats: 2, waste: 0 },
+  papier:   { name: 'Papier peint', mode: 'unit', unit: 'rouleau', cover: 5.3, coats: 1, waste: 10 },
+  sol:      { name: 'Revêtement de sol', mode: 'area', waste: 10 },
+  mural:    { name: 'Carrelage ou faïence', mode: 'area', waste: 10 },
+  plinthes: { name: 'Plinthes', mode: 'length', waste: 10 },
+  forfait:  { name: 'Forfait', mode: 'flat' }
+};
+// Préréglage d'après le matériau d'une finition
+const PRESET_OF = { peinture: 'peinture', papier: 'papier', faience: 'mural', pierre: 'mural', lambris: 'mural' };
+const BUDGET_DEF = { unit: 'unité', price: 0, cover: 10, coats: 1, waste: 0, labour: 0, sel: [] };
+const BUDGET_EXTRA = 10; // imprévus par défaut, en %
+const BUDGET_MAX = { items: 100, price: 1e6, cover: 1000, coats: 10, waste: 100, extra: 100, sel: 2000 };
+const UNITS = ['pot', 'rouleau', 'boîte', 'paquet', 'sac', 'unité'];
+const BUDGET_NUM = { price: [0, BUDGET_MAX.price], cover: [0.1, BUDGET_MAX.cover], coats: [1, BUDGET_MAX.coats], waste: [0, BUDGET_MAX.waste], labour: [0, BUDGET_MAX.price] };
+const unitPlural = u => u.endsWith('eau') ? u + 'x' : u + 's';
+const euro = n => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+const budgetOf = h => h.budget || { extra: BUDGET_EXTRA, items: [] };
+const budgetMeasure = key => key.endsWith('|p') ? 'length' : 'area';
+function budgetTarget(h, key){
+  const [id, code] = key.split('|'), r = h.rooms.find(x => x.id === id); if (!r || !code) return null;
+  if (code === 'f') return { r, label: 'sol', q: area(r.pts) };
+  if (code === 'c') return { r, label: 'plafond', q: area(r.pts) };
+  if (code === 'p') return { r, label: 'plinthes', q: skirting(r) };
+  const i = +code.slice(1);
+  return code[0] === 'w' && i < r.pts.length ? { r, label: `mur ${i + 1}`, q: wallArea(r, i) } : null;
+}
+// Quantité et coût d'un poste ; calc détaille l'opération pour qu'on puisse la vérifier
+function budgetCost(h, it){
+  const m = BUDGET_MODES[it.mode], unit = m.measure === 'length' ? 'm' : 'm²';
+  const t = m.measure ? it.sel.filter(k => budgetMeasure(k) === m.measure).map(k => budgetTarget(h, k)).filter(Boolean) : [];
+  const q = t.reduce((s, x) => s + x.q, 0), w = 1 + it.waste / 100, wTxt = it.waste ? ` + ${fmt(it.waste, 0)} %` : '';
+  let mat = 0, qty = '', calc = '';
+  if (it.mode === 'flat'){ mat = it.price; calc = `Forfait : ${euro(mat)}`; }
+  else if (it.mode === 'unit'){
+    const n = q > 0 ? Math.ceil(q * it.coats * w / it.cover - 1e-9) : 0, u = n > 1 ? unitPlural(it.unit) : it.unit;
+    mat = n * it.price; qty = `${n} ${u}`;
+    calc = `${fmt(q)} m²${it.coats > 1 ? ` × ${it.coats} couches` : ''}${wTxt} ÷ ${fmt(it.cover, 1)} m² = ${n} ${u} × ${euro(it.price)} = ${euro(mat)}`;
+  } else {
+    const Q = q * w; mat = Q * it.price; qty = `${fmt(Q, 1)} ${unit}`;
+    calc = `${fmt(q)} ${unit}${wTxt} = ${fmt(Q)} ${unit} × ${euro(it.price)} = ${euro(mat)}`;
+  }
+  const lab = it.mode === 'flat' ? 0 : q * it.labour;
+  if (lab) calc += `, pose ${fmt(q)} ${unit} × ${euro(it.labour)} = ${euro(lab)}`;
+  return { t, q, unit, qty, mat, lab, total: mat + lab, calc };
+}
+function budgetTotals(h){
+  const b = budgetOf(h), lines = b.items.map(it => budgetCost(h, it));
+  const mat = lines.reduce((s, l) => s + l.mat, 0), lab = lines.reduce((s, l) => s + l.lab, 0), extra = (mat + lab) * b.extra / 100;
+  return { mat, lab, extra, total: mat + lab + extra };
+}
+function newBudgetItem(preset, x = {}){
+  const p = BUDGET_PRESETS[preset];
+  return { ...BUDGET_DEF, ...p, ...x, id: uid('b') };
+}
+// Surfaces portant un produit noté dans les finitions (pour un poste créé « d'après une finition »)
+function finishTargets(h, F){
+  const k = productKey(F);
+  return finishesOf(h.rooms).filter(x => productKey(x.F) === k).flatMap(({ r, key }) =>
+    key === 'floor' ? [r.id + '|f'] : key === 'ceiling' ? [r.id + '|c'] : key[0] === 'a' ? [r.id + '|w' + key.slice(1)]
+    : r.pts.map((_, i) => i).filter(i => !accentOf(r, i)).map(i => r.id + '|w' + i));
+}
+function setBudget(h, patch){ h.budget = { ...budgetOf(h), ...patch }; }
+function setBudgetItem(h, id, patch){ setBudget(h, { items: budgetOf(h).items.map(it => it.id === id ? { ...it, ...patch } : it) }); }
+// Murs ajoutés ou retirés dans une pièce : les murs choisis suivent le mur le plus proche de leur ancien milieu
+function reprojectBudget(h, r, oldP, newP){
+  if (!h || !h.budget) return;
+  const move = k => { const [id, c] = k.split('|'); return id === r.id && c[0] === 'w' && +c.slice(1) < oldP.length ? `${id}|w${nearestWall(newP, wallPoint(oldP, +c.slice(1), 0.5))}` : k; };
+  setBudget(h, { items: budgetOf(h).items.map(it => ({ ...it, sel: [...new Set(it.sel.map(move))] })) });
+}
+// Lien de partage : prix en centimes, couverture en centièmes de m², surfaces en [n° de pièce, code]
+function packBudget(h){
+  const b = h.budget; if (!b || !b.items.length) return undefined;
+  const ri = id => h.rooms.findIndex(r => r.id === id);
+  return { x: b.extra, i: b.items.map(it => [it.name, it.mode, it.unit, Math.round(it.price * 100), Math.round(it.cover * 100), it.coats, it.waste, Math.round(it.labour * 100),
+    it.sel.map(k => { const [id, c] = k.split('|'); return [ri(id), c]; }).filter(([i]) => i >= 0)]) };
+}
+function unpackBudget(o, rooms, int){
+  if (!o || typeof o !== 'object' || !Array.isArray(o.i)) return undefined;
+  const str = v => typeof v === 'string' ? v.slice(0, FIN_MAX.text) : '';
+  const items = o.i.slice(0, BUDGET_MAX.items).flatMap(a => {
+    if (!Array.isArray(a) || !own(BUDGET_MODES, a[1])) return [];
+    const sel = (Array.isArray(a[8]) ? a[8] : []).slice(0, BUDGET_MAX.sel).flatMap(s => {
+      if (!Array.isArray(s) || typeof s[1] !== 'string' || !/^(f|c|p|w\d{1,3})$/.test(s[1])) return [];
+      return [rooms[int(s[0], 0, rooms.length - 1)].id + '|' + s[1]];
+    });
+    return [{ id: uid('b'), name: str(a[0]) || BUDGET_MODES[a[1]].label, mode: a[1], unit: UNITS.includes(a[2]) ? a[2] : BUDGET_DEF.unit,
+      price: int(a[3], 0, BUDGET_MAX.price * 100) / 100, cover: Math.max(0.1, int(a[4], 0, BUDGET_MAX.cover * 100) / 100), coats: int(a[5], 1, BUDGET_MAX.coats),
+      waste: int(a[6], 0, BUDGET_MAX.waste), labour: int(a[7], 0, BUDGET_MAX.price * 100) / 100, sel: [...new Set(sel)] }];
+  });
+  return { extra: int(o.x, 0, BUDGET_MAX.extra), items };
+}
+
+/* ---------- Vue 3D du logement ---------- */
+/* Chaque mur est extrudé vers l'extérieur de sa pièce jusqu'à la hauteur sous plafond, et percé par ses
+   ouvertures (et par celles du mur d'en face quand il est mitoyen) ; l'écart d'un mur mitoyen est rempli.
+   Rendu à la demande, sans boucle : seuls le geste en cours et le relevé d'entrée redessinent. */
+const V3 = { wall: 0.07, slab: 0.2, height: 2.5, fov: 38,
+  view: [-0.6, 0.95], phi: [0.05, 1.52], rot: 0.008, zoom: [0.25, 8], step: 1.5 };
+let view3d = false, allLevels3d = false, v3 = null;
+const is3d = () => view3d && !houseEditing && !arranging && !!house && house.rooms.length > 0;
+
+// Altitude du sol de chaque niveau : hauteur sous plafond la plus haute du niveau en dessous, plus la dalle
+function levelBases(h){
+  const z = {}; let acc = 0;
+  h.levels.forEach(l => { z[l.id] = acc; acc += Math.max(0, ...levelRooms(h, l.id).map(r => r.height || 0)) || V3.height; acc += V3.slab; });
+  const g = h.levels.find(l => l.order === 0) || h.levels[0], z0 = z[g.id];
+  return Object.fromEntries(Object.entries(z).map(([k, v]) => [k, v - z0]));
+}
+const holeZ = (it, H) => { const z0 = Math.min(openingSill(it), H); return [z0, Math.min(z0 + openingHeight(it), H)]; };
+// Ouvertures de chaque mur, en t le long du mur ; un mur mitoyen reçoit aussi les ouvertures d'en face
+function wallHoles(h, rooms, joints){
+  const m = new Map(), add = (r, w, t0, t1, it) => {
+    const k = r.id + ':' + w; if (!m.has(k)) m.set(k, []);
+    m.get(k).push([Math.min(t0, t1), Math.max(t0, t1), it]);
+  };
+  rooms.forEach(r => (r.items || []).forEach(it => { if (it.kind === 'opening' && it.wall < r.pts.length) add(r, it.wall, it.t0, it.t1, it); }));
+  joints.forEach(jt => jointHoles(jt).forEach(([h0, h1, side, , it]) => {
+    const u0 = Math.max(h0, jt.s0), u1 = Math.min(h1, jt.s1); if (u1 - u0 < 0.05) return;
+    const [R, w, at] = side === 'A' ? [jt.B, jt.wb, u => jointB(jt, u)] : [jt.A, jt.wa, u => jointA(jt, u)];
+    add(R, w, projT(R.pts, w, at(u0)), projT(R.pts, w, at(u1)), it);
+  }));
+  return m;
+}
+// Pan de mur de `from` à `to` (abscisses de quadOf), avec allège et linteau au droit de chaque ouverture
+function pierce(put, quadOf, from, to, holes, z0, H){
+  let s = from;
+  holes.filter(([a, b]) => b > from && a < to).sort((x, y) => x[0] - y[0]).forEach(([a, b, it]) => {
+    const a1 = Math.max(a, s), b1 = Math.min(b, to); if (b1 <= a1) return;
+    if (a1 > s) put(quadOf(s, a1), z0, z0 + H);
+    const [h0, h1] = holeZ(it, H), q = quadOf(a1, b1);
+    put(q, z0, z0 + h0); put(q, z0 + h1, z0 + H);
+    s = b1;
+  });
+  if (to > s) put(quadOf(s, to), z0, z0 + H);
+}
+// Prisme vertical sur un quadrilatère du plan ; le plan (x, y) devient (x, z) dans la scène, y vers le haut.
+// La face q[0] → q[1] (le parement côté pièce pour un mur) prend la couleur `inner`, les autres la couleur de la feuille
+function prism(buf, q, z0, z1, inner){
+  if (z1 - z0 < 0.005) return;
+  const b = q.map(p => [p[0], z0, p[1]]), t = q.map(p => [p[0], z1, p[1]]);
+  const face = (c, a, d, e, f) => { buf.pos.push(...a, ...d, ...e, ...a, ...e, ...f); for (let k = 0; k < 6; k++) buf.col.push(c.r, c.g, c.b); };
+  face(v3.base, b[0], b[3], b[2], b[1]); face(v3.base, t[0], t[1], t[2], t[3]);
+  for (let i = 0; i < 4; i++){ const j = (i + 1) % 4; face(i === 0 && inner || v3.base, b[i], b[j], t[j], t[i]); }
+}
+// Couleur notée pour le parement d'un mur : celle du mur s'il est différent, sinon celle des murs de la pièce
+function wallColor(r, i){
+  const a = accentOf(r, i), F = a || (r.finishes || {}).walls;
+  return F && F.color ? new THREE.Color(F.color) : null;
+}
+function roomWalls(r, holes, put, z0){
+  const p = r.pts, H = r.height || V3.height;
+  p.forEach((_, i) => {
+    const c = wallColor(r, i), putC = (q, a, b) => put(q, a, b, c);
+    const L = wallLen(p, i); if (L < 0.01) return;
+    const n = inwardNormal(p, i), o = [-n[0] * V3.wall, -n[1] * V3.wall], e = V3.wall / L; // prolongé de l'épaisseur aux angles
+    const quadOf = (t0, t1) => { const A = wallPoint(p, i, t0), B = wallPoint(p, i, t1); return [A, B, [B[0] + o[0], B[1] + o[1]], [A[0] + o[0], A[1] + o[1]]]; };
+    pierce(putC, quadOf, -e, 1 + e, holes.get(r.id + ':' + i) || [], z0, H);
+  });
+}
+// Remplissage d'un mur mitoyen entre les deux parements
+function jointBand(jt, put, z0){
+  if (jt.gap < 2 * V3.wall + 0.01) return;
+  const w = V3.wall, H = Math.min(jt.A.height || V3.height, jt.B.height || V3.height);
+  const A = u => { const P = jointA(jt, u); return [P[0] - jt.na[0] * w, P[1] - jt.na[1] * w]; };
+  const B = u => { const P = jointB(jt, u); return [P[0] - jt.nb[0] * w, P[1] - jt.nb[1] * w]; };
+  pierce(put, (u0, u1) => [A(u0), A(u1), B(u1), B(u0)], jt.s0, jt.s1, jointHoles(jt).map(([a, b, , , it]) => [a, b, it]), z0, H);
+}
+// Sol d'une pièce : couleur notée, sinon le lavis du plan ; un matériau par couleur, gardé d'un rendu à l'autre
+function floorMat(color, ghost){
+  const k = (color || '') + (ghost ? '|g' : '');
+  if (!v3.floorMats[k]) v3.floorMats[k] = new THREE.MeshBasicMaterial({ color: color ? new THREE.Color(color) : v3.floor, side: THREE.DoubleSide,
+    ...(ghost ? { transparent: true, opacity: 0.35, depthWrite: false } : { polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }) });
+  return v3.floorMats[k];
+}
+function floorMesh(r, z0, mat){
+  const g = new THREE.ShapeGeometry(new THREE.Shape(r.pts.map(([x, y]) => new THREE.Vector2(x, y))));
+  g.rotateX(Math.PI / 2); g.translate(0, z0, 0);
+  return new THREE.Mesh(g, mat);
+}
+function v3Init(){
+  if (v3) return v3;
+  if (!window.THREE) return null;
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ antialias: true }); } catch (e){ return null; }
+  const css = getComputedStyle(document.documentElement), col = v => new THREE.Color(css.getPropertyValue(v).trim());
+  const sheet = col('--sheet'), floor = sheet.clone().lerp(col('--ink'), 0.05), side = THREE.DoubleSide, lift = { polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 };
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(sheet);
+  const scene = new THREE.Scene(), sun = new THREE.DirectionalLight(0xffffff, 0.4);
+  sun.position.set(-4, 10, 6);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.72), sun);
+  const canvas = renderer.domElement, labelBox = document.createElement('div');
+  canvas.tabIndex = 0;
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', 'Vue 3D du logement. Glisser pour tourner, glisser à deux doigts ou clic droit pour déplacer, pincer ou molette pour zoomer, flèches du clavier pour tourner. Touchez une pièce pour l’ouvrir.');
+  labelBox.className = 'v3-labels';
+  v3 = { renderer, scene, canvas, labelBox, base: sheet, floor, floorMats: {}, camera: new THREE.PerspectiveCamera(V3.fov, 1, 0.05, 500), root: null, pick: [], labels: [], cam: null, key: null, R: 10, anim: 0,
+    mats: {
+      face: new THREE.MeshLambertMaterial({ vertexColors: true, side, ...lift }),
+      ghost: new THREE.MeshLambertMaterial({ vertexColors: true, side, transparent: true, opacity: 0.35, depthWrite: false }),
+      ink: new THREE.LineBasicMaterial({ color: col('--ink') }),
+      faint: new THREE.LineBasicMaterial({ color: col('--construct') })
+    } };
+  v3Controls(canvas);
+  return v3;
+}
+function v3Build(h){
+  const { scene, mats } = v3, cur = h.curLevel, ids = allLevels3d ? h.levels.map(l => l.id) : [cur];
+  if (v3.root){ scene.remove(v3.root); v3.root.traverse(o => o.geometry && o.geometry.dispose()); }
+  const rooms = h.rooms.filter(r => ids.includes(r.levelId) && r.pts.length >= 3), z = levelBases(h);
+  const joints = ids.flatMap(id => detectJoints(h, id)).filter(j => !j.off), holes = wallHoles(h, rooms, joints);
+  const solid = { on: { pos: [], col: [] }, off: { pos: [], col: [] } }, root = new THREE.Group(), floors = [];
+  const putter = r => { const buf = r.levelId === cur ? solid.on : solid.off; return (q, z0, z1, c) => prism(buf, q, z0, z1, c); };
+  rooms.forEach(r => {
+    roomWalls(r, holes, putter(r), z[r.levelId]);
+    const f = floorMesh(r, z[r.levelId], floorMat(((r.finishes || {}).floor || {}).color, r.levelId !== cur));
+    f.userData.room = r; root.add(f);
+    if (r.levelId === cur) floors.push(f);
+  });
+  joints.forEach(jt => jointBand(jt, putter(jt.A), z[jt.A.levelId]));
+  let walls = null;
+  [['on', mats.face, mats.ink], ['off', mats.ghost, mats.faint]].forEach(([k, face, line]) => {
+    if (!solid[k].pos.length) return;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(solid[k].pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(solid[k].col, 3)); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, face); root.add(m, new THREE.LineSegments(new THREE.EdgesGeometry(g, 20), line));
+    if (k === 'on') walls = m;
+  });
+  scene.add(root);
+  v3.root = root; v3.pick = walls ? floors.concat(walls) : floors;
+  v3.labels = rooms.filter(r => r.levelId === cur).map(r => {
+    const [x, y] = labelPoint(r.pts), el = document.createElement('span');
+    el.textContent = r.name;
+    return { el, p: new THREE.Vector3(x, z[r.levelId] + 0.05, y) };
+  });
+  v3.labelBox.replaceChildren(...v3.labels.map(l => l.el));
+  const box = new THREE.Box3().setFromObject(root), c = box.getCenter(new THREE.Vector3());
+  v3.R = Math.max(box.getBoundingSphere(new THREE.Sphere()).radius, 1); v3.c = c;
+  return c;
+}
+// Cadrage : la caméra recule jusqu'à voir toute la sphère englobante dans l'angle de vue le plus étroit ;
+// la distance est calculée au premier dessin, quand la taille de la zone est connue
+const v3Fit = (c, th, ph) => { v3.cam = { th, ph, r: null, t: c.clone() }; };
+function v3FitDistance(aspect){
+  const half = Math.atan(Math.tan(V3.fov * Math.PI / 360) * Math.min(1, aspect));
+  return v3.R / Math.sin(half) * 1.05;
+}
+function v3Show(plan, h){
+  const c = v3Build(h), key = h.id + '|' + h.curLevel + '|' + allLevels3d;
+  plan.replaceChildren(v3.canvas, v3.labelBox);
+  if (!v3.cam){ v3Fit(c, 0, V3.phi[0]); v3Lift(); }
+  else if (v3.key !== key) v3Fit(c, v3.cam.th, v3.cam.ph);
+  v3.key = key;
+  v3Draw();
+  if (!v3.canvas.clientWidth) requestAnimationFrame(v3Draw); // écran pas encore affiché
+}
+// Entrée en 3D : la feuille vue de dessus (même orientation que le plan) se relève en perspective
+function v3Lift(){
+  cancelAnimationFrame(v3.anim);
+  const cam = v3.cam, [th, ph] = V3.view, ph0 = cam.ph;
+  if (reducedMQ.matches){ cam.th = th; cam.ph = ph; return; }
+  const t0 = performance.now();
+  const step = now => {
+    const k = Math.min(1, (now - t0) / LINE_MS), e = 1 - Math.pow(1 - k, 3); // proche de --e-draw
+    cam.th = th * e; cam.ph = ph0 + (ph - ph0) * e; v3Draw();
+    v3.anim = k < 1 ? requestAnimationFrame(step) : 0;
+  };
+  v3.anim = requestAnimationFrame(step);
+}
+function v3Draw(){
+  if (!v3 || !v3.cam || !v3.canvas.isConnected) return;
+  const { renderer, camera, cam, canvas } = v3, w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h) return;
+  const size = renderer.getSize(new THREE.Vector2());
+  if (size.x !== w || size.y !== h) renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  if (cam.r == null) cam.r = v3FitDistance(w / h);
+  const s = Math.sin(cam.ph);
+  camera.position.set(cam.t.x + cam.r * s * Math.sin(cam.th), cam.t.y + cam.r * Math.cos(cam.ph), cam.t.z + cam.r * s * Math.cos(cam.th));
+  camera.lookAt(cam.t); camera.updateMatrixWorld();
+  renderer.render(v3.scene, camera);
+  v3.labels.forEach(({ el, p }) => {
+    const q = p.clone().project(camera), on = q.z < 1 && Math.abs(q.x) < 1.1 && Math.abs(q.y) < 1.1;
+    el.style.display = on ? '' : 'none';
+    if (on) el.style.transform = `translate(${((q.x + 1) / 2 * w).toFixed(1)}px,${((1 - q.y) / 2 * h).toFixed(1)}px) translate(-50%,-50%)`;
+  });
+}
+const v3Orbit = (dth, dph) => { const c = v3.cam; c.th += dth; c.ph = Math.min(V3.phi[1], Math.max(V3.phi[0], c.ph + dph)); };
+function v3Dolly(f){ const c = v3.cam, r0 = v3FitDistance(1); if (c.r == null) return; c.r = Math.min(r0 * V3.zoom[1], Math.max(r0 * V3.zoom[0], c.r * f)); }
+// Déplacement dans le plan de l'écran, à l'échelle du point visé
+function v3Pan(dx, dy){
+  const { camera, cam, canvas } = v3, k = 2 * cam.r * Math.tan(V3.fov * Math.PI / 360) / (canvas.clientHeight || 1);
+  cam.t.addScaledVector(new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0), -dx * k)
+       .addScaledVector(new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1), dy * k);
+}
+function v3Zoom(z){
+  if (!v3 || !v3.cam) return;
+  cancelAnimationFrame(v3.anim);
+  if (z === 'fit') v3Fit(v3.c, V3.view[0], V3.view[1]);
+  else v3Dolly(z === 'in' ? 1 / V3.step : V3.step);
+  v3Draw();
+}
+// Un appui sans glisser sur le sol d'une pièce l'ouvre ; les murs du niveau masquent les sols derrière eux
+function v3Pick(x, y){
+  const b = v3.canvas.getBoundingClientRect(), ray = new THREE.Raycaster();
+  ray.setFromCamera(new THREE.Vector2((x - b.left) / b.width * 2 - 1, -(y - b.top) / b.height * 2 + 1), v3.camera);
+  const hit = ray.intersectObjects(v3.pick)[0];
+  if (hit && hit.object.userData.room) enterRoom(hit.object.userData.room);
+}
+/* Un doigt ou clic gauche : tourner ; deux doigts, clic droit ou Maj : déplacer ; pincement ou molette : zoomer */
+function v3Controls(canvas){
+  const pts = new Map(); let last = null, from = null, moved = false;
+  const gesture = () => {
+    const a = [...pts.values()], x = a.reduce((s, p) => s + p[0], 0) / a.length, y = a.reduce((s, p) => s + p[1], 0) / a.length;
+    return { x, y, n: a.length, d: a.length > 1 ? Math.hypot(a[1][0] - a[0][0], a[1][1] - a[0][1]) : 0 };
+  };
+  canvas.addEventListener('pointerdown', e => {
+    if (!v3.cam) return;
+    cancelAnimationFrame(v3.anim);
+    try { canvas.setPointerCapture(e.pointerId); } catch (_){ }
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 1){ from = [e.clientX, e.clientY]; moved = false; } else moved = true;
+    last = gesture();
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    const g = gesture(), dx = g.x - last.x, dy = g.y - last.y;
+    if (!moved && Math.hypot(e.clientX - from[0], e.clientY - from[1]) > 5) moved = true;
+    if (!moved) return;
+    if (g.n > 1){ if (last.n === g.n){ v3Dolly(last.d / (g.d || 1)); v3Pan(dx, dy); } }
+    else if (e.buttons & 2 || e.shiftKey) v3Pan(dx, dy);
+    else v3Orbit(-dx * V3.rot, -dy * V3.rot);
+    last = g; v3Draw();
+  });
+  const up = e => {
+    if (!pts.delete(e.pointerId)) return;
+    if (pts.size){ last = gesture(); return; }
+    if (!moved && e.type === 'pointerup' && e.button === 0) v3Pick(e.clientX, e.clientY);
+    last = null;
+  };
+  canvas.addEventListener('pointerup', up);
+  canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  canvas.addEventListener('wheel', e => {
+    if (!v3.cam || (!wideMQ.matches && !e.ctrlKey)) return; // page défilante : la molette seule fait défiler
+    e.preventDefault(); cancelAnimationFrame(v3.anim);
+    v3Dolly(Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0015))); v3Draw();
+  }, { passive: false });
+  canvas.addEventListener('keydown', e => {
+    const k = { ArrowLeft: [0.15, 0], ArrowRight: [-0.15, 0], ArrowUp: [0, -0.1], ArrowDown: [0, 0.1] }[e.key];
+    if (k){ v3Orbit(k[0], k[1]); }
+    else if (e.key === '+' || e.key === '=') v3Dolly(1 / V3.step);
+    else if (e.key === '-') v3Dolly(V3.step);
+    else return;
+    e.preventDefault(); cancelAnimationFrame(v3.anim); v3Draw();
+  });
+}
 
 /* ---------- Partage par lien ---------- */
 // Le logement voyage compressé dans le fragment (#s=…) : il n'est jamais envoyé à un serveur
@@ -1357,9 +1943,12 @@ function packHouse(h){
     r: h.rooms.map(r => ({ n: r.name, l: lv.indexOf(r.levelId), h: Math.round((r.height || 0) * MM), g: grp(r.sid),
       p: r.pts.flatMap(([x, y]) => [Math.round(x * MM), Math.round(y * MM)]),
       i: (r.items || []).map(it => it.kind === 'opening'
-        ? ['o', it.type, it.wall, Math.round(it.t0 * TT), Math.round(it.t1 * TT), (it.swingOut ? 1 : 0) | (it.hingeEnd ? 2 : 0)]
-        : ['d', it.type, it.wall, Math.round(it.t * TT), Math.round((it.d || 0) * MM), it.h == null ? null : Math.round(it.h * MM), ci(it.circuit)]) })) };
+        ? ['o', it.type, it.wall, Math.round(it.t0 * TT), Math.round(it.t1 * TT), (it.swingOut ? 1 : 0) | (it.hingeEnd ? 2 : 0),
+           ...(it.height != null || it.sill != null ? [mmOrNull(it.height), mmOrNull(it.sill)] : [])]
+        : ['d', it.type, it.wall, Math.round(it.t * TT), Math.round((it.d || 0) * MM), it.h == null ? null : Math.round(it.h * MM), ci(it.circuit)]),
+      f: packFinishes(r) })), b: packBudget(h) };
 }
+const mmOrNull = v => v == null ? null : Math.round(v * MM);
 // Données venues d'un lien : tout est vérifié, rien n'est repris tel quel
 function unpackHouse(o){
   const int = (v, min, max) => { if (!Number.isInteger(v) || v < min || v > max) throw new Error('valeur invalide'); return v; };
@@ -1382,7 +1971,7 @@ function unpackHouse(o){
     const g = int(r.g, 0, SHARE_MAX.rooms);
     const items = (Array.isArray(r.i) ? r.i : []).slice(0, SHARE_MAX.items).map(a => unpackItem(a, pts.length, int, cids)).filter(Boolean);
     return { id: uid('r'), name: str(r.n) || 'Pièce', pts, height: int(r.h, 0, 10 * MM) / MM,
-             sid: sids[g] || (sids[g] = uid('s')), levelId: levels[int(r.l, 0, levels.length - 1)].id, items };
+             sid: sids[g] || (sids[g] = uid('s')), levelId: levels[int(r.l, 0, levels.length - 1)].id, items, finishes: unpackFinishes(r.f, pts.length, int) };
   });
   const joints = {};
   (Array.isArray(o.j) ? o.j : []).slice(0, SHARE_MAX.rooms).forEach(a => {
@@ -1390,14 +1979,16 @@ function unpackHouse(o){
     const A = rooms[int(a[0], 0, rooms.length - 1)], B = rooms[int(a[2], 0, rooms.length - 1)];
     joints[jointKey(A.id, int(a[1], 0, A.pts.length - 1), B.id, int(a[3], 0, B.pts.length - 1))] = { off: true };
   });
-  return ensureLevels({ id: uid('h'), name: str(o.n) || 'Logement partagé', levels, rooms, joints, circuits, date: Date.now() });
+  return ensureLevels({ id: uid('h'), name: str(o.n) || 'Logement partagé', levels, rooms, joints, circuits, budget: unpackBudget(o.b, rooms, int), date: Date.now() });
 }
 function unpackItem(a, n, int, cids){
   if (!Array.isArray(a)) return null;
   const [k, type] = a;
   if (k === 'o' && own(OPENINGS, type)){
     const f = int(a[5], 0, 3);
-    return { id: uid('i'), kind: 'opening', type, wall: int(a[2], 0, n - 1), t0: int(a[3], 0, TT) / TT, t1: int(a[4], 0, TT) / TT, swingOut: !!(f & 1), hingeEnd: !!(f & 2) };
+    const opt = (v, max) => v == null ? null : int(v, 0, max * MM) / MM; // absentes des liens plus anciens
+    return { id: uid('i'), kind: 'opening', type, wall: int(a[2], 0, n - 1), t0: int(a[3], 0, TT) / TT, t1: int(a[4], 0, TT) / TT, swingOut: !!(f & 1), hingeEnd: !!(f & 2),
+             height: opt(a[6], OPEN_MAX.height), sill: opt(a[7], OPEN_MAX.sill) };
   }
   if (k === 'd' && own(DEVICES, type))
     return { id: uid('i'), kind: 'device', type, wall: int(a[2], 0, n - 1), t: int(a[3], 0, TT) / TT, d: int(a[4], 0, 100 * MM) / MM,
@@ -1760,9 +2351,13 @@ const SAMPLE_UP = [
 ];
 $('#demoBtn').addEventListener('click', () => {
   const l0 = { id:'l0', name:'Rez-de-chaussée', order:0 }, l1 = { id:'l1', name:'1er étage', order:1 };
-  const mk = (list, l, k) => list.map((r,i)=>({ id:'d'+k+i, name:r.name, pts:r.pts.map(p=>p.slice()), height:2.5, sid:'demo', levelId:l.id,
+  const mk = (list, l, k) => list.map((r,i)=>({ id:'d'+k+i, name:r.name, pts:r.pts.map(p=>p.slice()), height:2.5, sid:'demo', levelId:l.id, finishes:r.finishes,
     items:(r.items||[]).map((it,j)=>({ ...it, id:'d'+k+i+'-'+j })) }));
   openHouse({ id:'demo', demo:true, name:'Maison (exemple)', date:Date.now(), levels:[l0,l1], curLevel:'l0',
+    budget: { extra: BUDGET_EXTRA, items: [
+      newBudgetItem('peinture', { name: 'Repeindre le salon', price: 42.9, labour: 18, sel: ['da0|w0', 'da0|w2', 'da0|w3'] }),
+      newBudgetItem('sol', { name: 'Parquet de la chambre', price: 45, labour: 25, sel: ['da3|f'] }),
+      newBudgetItem('plinthes', { name: 'Plinthes de la chambre', price: 6.5, sel: ['da3|p'] }) ] },
     rooms: mk(SAMPLE_ROOMS, l0, 'a').concat(mk(SAMPLE_UP, l1, 'b')), circuits: SAMPLE_CIRCUITS.map(c => ({ ...c })) });
 });
 
@@ -1785,7 +2380,7 @@ function renderDraft(){
 
 /* Logement */
 let arranging = false, selIdx = null, aView = null, drag = null, houseEditing = false;
-function openHouse(h){ $('#housePlan')._zoom = null; armed = null; house = ensureLevels(h); arranging = false; houseEditing = false; selIdx = null; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); drawIn($('#housePlan'), levelRooms(house).length); }
+function openHouse(h){ $('#housePlan')._zoom = null; armed = null; budgetOpen = null; house = ensureLevels(h); arranging = false; houseEditing = false; selIdx = null; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); drawIn($('#housePlan'), levelRooms(house).length); }
 function renderHouse(){
   const h = ensureLevels(house), all = h.rooms, lvl = curLevel(h);
   const rooms = levelRooms(h);
@@ -1798,21 +2393,32 @@ function renderHouse(){
   const plan = $('#housePlan');
   plan.classList.toggle('arranging', arranging);
   plan.classList.toggle('editing', houseEditing && !arranging);
+  const three = is3d() && !!v3Init();
+  plan.classList.toggle('v3d', three); plan._v3 = three;
   if (!all.length){
     plan.innerHTML = '<div class="emptyplan">Aucune pièce relevée. Lancez un relevé ou dessinez une pièce pour commencer le plan.</div>';
+  } else if (three){
+    plan._map = null; plan._view = null;
+    v3Show(plan, h);
+    if (!rooms.length && !allLevels3d) plan.insertAdjacentHTML('beforeend', '<div class="emptyplan">Aucune pièce sur ce niveau.</div>');
   } else {
     // Même cadrage pour tous les niveaux : les étages se superposent quand on change d'onglet
     const box = planBox(plan), v = arranging ? (aView || (aView = makeView(all, 3, box))) : makeView(all, 0.6, box);
-    const opts = { id:'hsvg', house: h, badges: houseEditing && !arranging, level: lvl.id, ghost: arranging || !rooms.length, dims: $('#dimsChk').checked && !arranging, elec: $('#elecChk').checked, sel: arranging ? movingSet() : null };
+    const opts = { id:'hsvg', house: h, badges: houseEditing && !arranging, level: lvl.id, ghost: arranging || !rooms.length, bsel: arranging || houseEditing ? null : budgetSel(), dims: $('#dimsChk').checked && !arranging, elec: $('#elecChk').checked, sel: arranging ? movingSet() : null };
     plan.innerHTML = houseSVG(all, v, opts);
     plan._view = v; plan._opts = opts;
     plan._map = { S: v.S, pad: v.pad, ox: v.minX, oy: v.minY }; applyZoom(plan);
     if (!rooms.length) plan.insertAdjacentHTML('beforeend', '<div class="emptyplan">Aucune pièce sur ce niveau. Les pointillés montrent les autres niveaux.</div>');
   }
   $('#houseTools').classList.toggle('hidden', arranging || !all.length);
+  $('#viewMode').classList.toggle('hidden', arranging || houseEditing || !all.length);
+  $('#viewMode').querySelectorAll('[data-v]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.v === '3d') === three)));
+  $('#houseTools').querySelectorAll('[data-2d]').forEach(l => l.classList.toggle('hidden', three));
+  $('#allLvl').classList.toggle('hidden', !three || h.levels.length < 2);
+  $('#allChk').checked = allLevels3d;
   const counts = {};
   rooms.forEach(r => (r.items||[]).forEach(i => { if (i.kind === 'device') counts[i.type] = (counts[i.type]||0) + 1; }));
-  $('#legend').innerHTML = $('#elecChk').checked && !arranging
+  $('#legend').innerHTML = $('#elecChk').checked && !arranging && !three
     ? Object.keys(DEVICES).filter(k => counts[k]).map(k => `<span>${deviceIcon(k)}${DEVICES[k].label} <b>${counts[k]}</b></span>`).join('') : '';
   $('#arrangeBtn').disabled = rooms.length < 1 || all.length < 2;
   $('#arrangePanel').classList.toggle('hidden', !arranging);
@@ -1830,6 +2436,9 @@ function renderHouse(){
     : '<li class="empty">Aucune pièce sur ce niveau pour l’instant.</li>';
   $('#circuitPanel').classList.toggle('hidden', arranging || !all.length);
   if (!arranging && all.length) renderCircuits();
+  renderShop(h);
+  if (!$('#budgetList').contains(document.activeElement)) renderBudget(h); else refreshBudget(h);
+  plan.classList.toggle('picking', budgetPicking());
   $('#houseEditPanel').classList.toggle('hidden', !houseEditing || arranging);
   if (houseEditing && !arranging) renderJoints();
   $('#sharedPanel').classList.toggle('hidden', !h.shared);
@@ -1868,12 +2477,22 @@ $('#delLevel').addEventListener('click', () => {
 $('#houseBack').addEventListener('click', () => { renderHome(); show('#home'); });
 $('#houseName').addEventListener('input', e => { house.name = e.target.value || 'Logement'; if (!house.demo) persist(); });
 $('#dimsChk').addEventListener('change', renderHouse);
+$('#allChk').addEventListener('change', e => { allLevels3d = e.target.checked; renderHouse(); });
+$('#viewMode').addEventListener('click', e => {
+  const b = e.target.closest('[data-v]'); if (!b || (b.dataset.v === '3d') === view3d) return;
+  view3d = b.dataset.v === '3d';
+  if (view3d && v3) v3.cam = null; // la feuille se relève à chaque passage en 3D
+  renderHouse();
+  if (view3d && !$('#housePlan')._v3){ view3d = false; renderHouse(); toast('La vue 3D n’est pas disponible sur cet appareil'); }
+  else if (!view3d) drawIn($('#housePlan'), levelRooms(house).length);
+});
 $('#elecChk').addEventListener('change', renderHouse);
 // Ouvre une pièce, directement dans l'éditeur en mode Éditeur
 function enterRoom(r){ openRoom(r); if (houseEditing) setEditing(true); }
 $('#roomList').addEventListener('click', e => { const o = e.target.closest('[data-r]'); if (o) enterRoom(house.rooms[+o.dataset.r]); });
 $('#housePlan').addEventListener('click', e => {
   if (arranging || ctxOpen()) return;
+  if (budgetPicking()){ budgetPickAt(e); return; }
   const t = e.target.closest('[data-i]'); if (t) enterRoom(house.rooms[+t.dataset.i]);
 });
 
@@ -2189,7 +2808,7 @@ $('#housePlan').addEventListener('pointercancel', endDrag);
 /* Pièce */
 function openRoom(r){
   $('#roomPlan')._zoom = null;
-  roomRef = r; selItem = null; editing = false; selCorner = null; rdrag = null; editHistory = []; setPlacing(null);
+  roomRef = r; selItem = null; openFin = null; editing = false; selCorner = null; rdrag = null; editHistory = []; setPlacing(null);
   $('#roomName').value = r.name;
   $('#heightIn').value = (r.height || 2.5).toFixed(2);
   $('#roomLevel').innerHTML = house.levels.slice().reverse().map(l => `<option value="${l.id}"${l.id===r.levelId?' selected':''}>${escapeHtml(l.name)}</option>`).join('');
@@ -2199,12 +2818,12 @@ let placing = null, selItem = null;
 let editing = false, selCorner = null, rdrag = null, editHistory = [];
 // Annulation : instantané de la pièce avant chaque modification
 function snapshot(){
-  editHistory.push(JSON.stringify({ pts: roomRef.pts, items: roomRef.items || [] }));
+  editHistory.push(JSON.stringify({ pts: roomRef.pts, items: roomRef.items || [], finishes: roomRef.finishes || null }));
   if (editHistory.length > 60) editHistory.shift();
 }
 function undoEdit(){
   const s = editHistory.pop(); if (!s) return;
-  const o = JSON.parse(s); roomRef.pts = o.pts; roomRef.items = o.items;
+  const o = JSON.parse(s); roomRef.pts = o.pts; roomRef.items = o.items; roomRef.finishes = o.finishes || undefined;
   selCorner = null; if (selItem && !findItem(selItem)) selItem = null;
   save(); renderRoom();
 }
@@ -2220,7 +2839,7 @@ $('#delCorner').addEventListener('click', () => {
   const p = roomRef.pts; if (selCorner == null || p.length <= 3) return;
   snapshot();
   const np = p.filter((_, i) => i !== selCorner);
-  roomRef.items = reprojectItems(p, np, roomRef.items || []); roomRef.pts = np; dropJointOverrides(roomRef.id);
+  roomRef.items = reprojectItems(p, np, roomRef.items || []); reprojectAccents(roomRef, p, np); reprojectBudget(house, roomRef, p, np); roomRef.pts = np; dropJointOverrides(roomRef.id);
   selCorner = null; save(); renderRoom();
 });
 $('#addType').innerHTML = '<optgroup label="Ouvertures">' + Object.entries(OPENINGS).map(([k,o]) => `<option value="o:${k}">${o.label}</option>`).join('') + '</optgroup>'
@@ -2304,7 +2923,7 @@ $('#roomPlan').addEventListener('pointerdown', e => {
   if (t.dataset.mid != null){
     const i = +t.dataset.mid, p = r.pts, a = p[i], b = p[(i+1)%p.length];
     const np = [...p.slice(0, i+1), [(a[0]+b[0])/2, (a[1]+b[1])/2], ...p.slice(i+1)];
-    r.items = reprojectItems(p, np, r.items || []); r.pts = np; corner = i + 1; inserted = true; dropJointOverrides(r.id);
+    r.items = reprojectItems(p, np, r.items || []); reprojectAccents(r, p, np); reprojectBudget(house, r, p, np); r.pts = np; corner = i + 1; inserted = true; dropJointOverrides(r.id);
   } else if (t.dataset.corner != null) corner = +t.dataset.corner;
   selCorner = corner; selItem = corner == null ? t.dataset.item : null;
   rdrag = { frame, corner, item: selItem, start: roomToMeters(svg, e), moved: false, changed: inserted,
@@ -2360,6 +2979,8 @@ function renderItems(){
       const open = (OPENINGS[it.type] || {}).open;
       info = open ? `Mur ${it.wall+1}, sans porte` : `Mur ${it.wall+1}, ${it.swingOut ? 'ouvre vers l’extérieur' : 'ouvre vers l’intérieur'}`;
       ctl += `<label class="num-in">Largeur <input type="number" step="0.01" min="0.3" inputmode="decimal" data-w="${it.id}" value="${w.toFixed(2)}"> m</label>`;
+      ctl += `<label class="num-in">Hauteur <input type="number" step="0.01" min="0.3" max="${OPEN_MAX.height}" inputmode="decimal" data-oh="${it.id}" value="${openingHeight(it).toFixed(2)}"> m</label>`;
+      if (hasSill(it.type)) ctl += `<label class="num-in">Allège <input type="number" step="0.01" min="0" max="${OPEN_MAX.sill}" inputmode="decimal" data-sill="${it.id}" value="${openingSill(it).toFixed(2)}"> m</label>`;
       if (!open) ctl += `<button class="mini" data-flip="${it.id}">Inverser l’ouverture</button>`;
       if (!open && hasHinge(it.type, w)) ctl += `<button class="mini" data-hinge="${it.id}">${it.type === 'coulissante' ? 'Inverser le coulissement' : 'Inverser les gonds'}</button>`;
     } else {
@@ -2392,7 +3013,7 @@ $('#itemList').addEventListener('click', e => {
   save(); renderRoom();
 });
 $('#itemList').addEventListener('change', e => {
-  const d = e.target.dataset, it = findItem(d.w || d.h || d.circ); if (!it) return;
+  const d = e.target.dataset, it = findItem(d.w || d.h || d.circ || d.oh || d.sill); if (!it) return;
   snapshot();
   if (d.circ){
     let id = e.target.value || null;
@@ -2402,7 +3023,11 @@ $('#itemList').addEventListener('change', e => {
     }
     it.circuit = house.circuits.some(c => c.id === id) ? id : null;
   }
-  if (d.h){ const v = parseFloat(e.target.value); it.h = isNaN(v) ? null : v; }
+  const v = parseFloat(e.target.value);
+  if (d.h) it.h = isNaN(v) ? null : v;
+  // champ vidé : retour à la valeur courante du type
+  if (d.oh) it.height = isNaN(v) ? null : Math.min(OPEN_MAX.height, Math.max(0.3, v));
+  if (d.sill) it.sill = isNaN(v) ? null : Math.min(OPEN_MAX.sill, Math.max(0, v));
   if (d.w){
     const L = wallLen(roomRef.pts, it.wall), w = Math.max(0.3, Math.min(parseFloat(e.target.value) || 0, L));
     const dir = it.t1 >= it.t0 ? 1 : -1, c = (it.t0 + it.t1) / 2, half = w / 2 / L;
@@ -2411,6 +3036,270 @@ $('#itemList').addEventListener('change', e => {
     if (dir > 0){ it.t0 = lo; it.t1 = hi; } else { it.t0 = hi; it.t1 = lo; }
   }
   save(); renderRoom();
+});
+/* Finitions de la pièce : une ligne par surface, dépliée pour la saisie */
+let openFin = null, finTyping = false, finReuse = [];
+const finSwatch = F => F && F.color ? `<span class="fsw" style="background:${F.color}" aria-hidden="true"></span>` : '<span class="fsw none" aria-hidden="true"></span>';
+function finHead(r, key, F, s){
+  const parts = [hasFinish(F) ? escapeHtml(finSummary(F) || (F.note || '').slice(0, 40) || F.color) : 'Non renseigné'];
+  const q = finQuantity(F, s); if (q) parts.push(q);
+  if (key === 'floor') parts.push(`plinthes ${fmt(skirting(r), 1)} m`);
+  return parts.join(', ');
+}
+function finForm(r, key, F = {}){
+  const kind = surfaceKind(key), mat = MATERIALS[F.mat];
+  const opt = (v, lab, sel) => `<option value="${escapeHtml(v)}"${sel ? ' selected' : ''}>${escapeHtml(lab)}</option>`;
+  const txt = (k, lab, list, ph) => `<label class="ff"><span>${lab}</span><input data-f="${k}" maxlength="${FIN_MAX.text}" autocomplete="off"${list ? ` list="${list}"` : ''} placeholder="${ph}" value="${escapeHtml(F[k] || '')}"></label>`;
+  // Reprendre : les produits déjà notés ailleurs dans le logement, pour ce type de surface
+  const seen = new Set([productKey(F)]);
+  finReuse = finishesOf(house.rooms).filter(x => surfaceKind(x.key) === kind && isProduct(x.F) && !seen.has(productKey(x.F)) && seen.add(productKey(x.F)));
+  const free = r.pts.map((_, i) => i).filter(i => !accentOf(r, i));
+  return `<div class="fin-form">
+    ${finReuse.length ? `<label class="ff"><span>Reprendre</span><select data-reuse>${opt('', 'Une finition déjà notée…', true)}${finReuse.map((x, k) => opt(k, `${finSummary(x.F)} (${x.r.name})`)).join('')}</select></label>` : ''}
+    <label class="ff"><span>Matériau</span><select data-f="mat">${opt('', '–', !F.mat)}${Object.entries(MATERIALS).filter(([, m]) => m.on.includes(kind)).map(([k, m]) => opt(k, m.label, F.mat === k)).join('')}</select></label>
+    ${txt('brand', 'Marque', 'dlBrand', '')}
+    ${txt('ref', 'Référence', 'dlRef', mat && mat.paint ? 'Gamme, code produit' : 'Code produit, format…')}
+    ${txt('tint', 'Teinte', 'dlTint', 'Nom ou code de la teinte')}
+    <div class="ff"><span>Couleur</span><div class="crow"><input type="color" data-f="color" value="${F.color || '#ffffff'}" aria-label="Couleur">${F.color ? '<button class="mini" data-fclear>Sans couleur</button>' : '<small>aucune</small>'}</div></div>
+    ${mat && mat.paint ? `<label class="ff"><span>Aspect</span><select data-f="sheen">${opt('', '–', !F.sheen)}${SHEENS.map(v => opt(v, v, F.sheen === v)).join('')}</select></label>` : ''}
+    <label class="ff"><span>Note</span><textarea data-f="note" maxlength="${FIN_MAX.note}" rows="2" placeholder="Fournisseur, prix, date des travaux…">${escapeHtml(F.note || '')}</textarea></label>
+    <div class="fin-actions">
+      ${key === 'walls' && free.length > 1 ? `<select data-accent aria-label="Noter un mur différent">${opt('', 'Un mur est différent…', true)}${free.map(i => opt(i, `Mur ${i + 1}`)).join('')}</select>` : ''}
+      ${key[0] === 'a' ? '<button class="mini danger" data-fdel>Comme les autres murs</button>' : hasFinish(F) ? '<button class="mini danger" data-fdel>Effacer</button>' : ''}
+    </div></div>`;
+}
+function renderFinishes(){
+  const r = roomRef, rows = roomSurfaces(r);
+  if (openFin && !rows.some(x => x[0] === openFin)) openFin = null;
+  $('#finishList').innerHTML = rows.map(([key, label, F, s]) => `<li class="${openFin === key ? 'on' : ''}" data-row="${key}">${finSwatch(F)}
+    <button class="open" data-fin="${key}" aria-expanded="${openFin === key}"><b>${label}</b><span data-fhead>${finHead(r, key, F, s)}</span></button>
+    <span class="area">${fmt(s, 1)} m²</span>${openFin === key ? finForm(r, key, F) : ''}</li>`).join('');
+  fillFinishLists();
+}
+// En cours de saisie : seuls les résumés, pastilles et surfaces changent, le formulaire garde le focus
+function refreshFinishHeads(){
+  roomSurfaces(roomRef).forEach(([key, , F, s]) => {
+    const li = $('#finishList').querySelector(`[data-row="${key}"]`); if (!li) return;
+    li.querySelector('[data-fhead]').innerHTML = finHead(roomRef, key, F, s);
+    li.querySelector('.fsw').outerHTML = finSwatch(F);
+    li.querySelector('.area').textContent = fmt(s, 1) + ' m²';
+  });
+}
+// Suggestions : marques, références et teintes déjà notées dans tous les logements
+function fillFinishLists(){
+  const all = houses.concat(house && !houses.includes(house) ? [house] : []).flatMap(h => finishesOf(h.rooms));
+  const list = k => [...new Set(all.map(x => x.F[k]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')).map(v => `<option value="${escapeHtml(v)}">`).join('');
+  $('#dlBrand').innerHTML = list('brand'); $('#dlRef').innerHTML = list('ref'); $('#dlTint').innerHTML = list('tint');
+}
+const finKeyOf = el => el.closest('[data-row]').dataset.row;
+// Changement de structure (ligne ajoutée, champ affiché ou masqué) : la liste est redessinée même si elle a le focus
+function finChanged(){ save(); renderRoom(); renderFinishes(); }
+$('#finishList').addEventListener('click', e => {
+  const t = e.target.closest('[data-fin],[data-fclear],[data-fdel]'); if (!t) return;
+  if (t.dataset.fin){ openFin = openFin === t.dataset.fin ? null : t.dataset.fin; renderFinishes(); return; }
+  const key = finKeyOf(t), r = roomRef;
+  snapshot();
+  if (t.dataset.fclear != null) setFin(r, key, { color: '' });
+  else if (key[0] === 'a'){ r.finishes = { ...r.finishes, accents: r.finishes.accents.filter(a => a.wall !== +key.slice(1)) }; openFin = 'walls'; }
+  else { const { [key]: _, ...rest } = r.finishes || {}; r.finishes = rest; }
+  finChanged();
+});
+$('#finishList').addEventListener('focusin', () => { finTyping = false; });
+$('#finishList').addEventListener('input', e => {
+  const k = e.target.dataset.f; if (!k || e.target.tagName === 'SELECT') return;
+  if (!finTyping){ snapshot(); finTyping = true; $('#undoEdit').disabled = false; } // une annulation par champ modifié
+  setFin(roomRef, finKeyOf(e.target), { [k]: e.target.value });
+  save(); refreshFinishHeads();
+});
+$('#finishList').addEventListener('change', e => {
+  const t = e.target, r = roomRef; if (t.tagName !== 'SELECT') return;
+  if (!t.dataset.f && t.value === '') return; // « Reprendre… » ou « Un mur est différent… »
+  const key = finKeyOf(t);
+  snapshot();
+  if (t.dataset.f) setFin(r, key, { [t.dataset.f]: t.value });
+  else if (t.dataset.reuse != null){
+    const src = finReuse[+t.value];
+    const { note, wall, ...product } = src.F; // le produit est repris, la note reste propre à la surface
+    setFin(r, key, { ...Object.fromEntries(FIN_FIELDS.map(f => [f, ''])), ...product, note: (getFin(r, key) || {}).note || '' });
+    toast(`Finition reprise de ${src.r.name}`);
+  } else if (t.dataset.accent != null){
+    const w = +t.value;
+    r.finishes = { ...(r.finishes || {}), accents: [...((r.finishes || {}).accents || []), { wall: w }] };
+    openFin = 'a' + w;
+  }
+  finChanged();
+});
+function finishLines(r){
+  const rows = roomSurfaces(r).filter(x => hasFinish(x[2]));
+  if (!rows.length) return [];
+  return ['', 'Finitions', ...rows.map(([key, label, F, s]) => `${label} : ${[finSummary(F), F.color].filter(Boolean).join(', ')} – ${fmt(s, 1)} m²`
+    + [finQuantity(F, s), key === 'floor' ? `plinthes ${fmt(skirting(r), 1)} m` : '', F.note].filter(Boolean).map(v => ', ' + v).join(''))];
+}
+/* Liste d'achats du logement */
+function renderShop(h){
+  const list = shoppingList(h.rooms);
+  $('#shopBox').classList.toggle('hidden', !list.length);
+  $('#shopList').innerHTML = list.map(g => `<li>${finSwatch(g.F)}<div class="open"><b>${escapeHtml(finSummary(g.F) || g.F.color)}</b>
+    <span>${escapeHtml(g.uses.join(', '))}</span>${finQuantity(g.F, g.s) ? `<span class="qty">${finQuantity(g.F, g.s)}</span>` : ''}</div>
+    <span class="area">${fmt(g.s, 1)} m²</span></li>`).join('');
+}
+$('#shopCopy').addEventListener('click', async () => {
+  const txt = [`Liste d’achats : ${house.name}`, ...shoppingList(house.rooms).map(g => `- ${[finSummary(g.F), g.F.color].filter(Boolean).join(', ')} : ${fmt(g.s, 1)} m²`
+    + (finQuantity(g.F, g.s) ? `, ${finQuantity(g.F, g.s)}` : '') + ` (${g.uses.join(', ')})`)].join('\n');
+  try { await navigator.clipboard.writeText(txt); toast('Liste d’achats copiée'); }
+  catch(e){ prompt('Copiez la liste :', txt.replace(/\n/g, ' | ')); }
+});
+/* Budget travaux : un poste déplié à la fois ; ses surfaces se choisissent dans la liste ou en touchant le plan 2D */
+let budgetOpen = null, budgetTyping = false;
+const openItem = () => budgetOf(house).items.find(it => it.id === budgetOpen);
+const budgetPicking = () => { const it = openItem(); return !!it && it.mode !== 'flat' && !houseEditing && !arranging && !$('#housePlan')._v3; };
+// Surfaces du poste ouvert, surlignées sur le plan
+const budgetSel = () => { const it = openItem(); return it && it.mode !== 'flat' ? new Set(it.sel) : null; };
+function budgetHead(h, it, c){
+  if (it.mode === 'flat') return 'Forfait';
+  if (!c.t.length) return 'Aucune surface choisie';
+  return `${c.t.length} surface${c.t.length > 1 ? 's' : ''}, ${fmt(c.q, 1)} ${c.unit}${c.qty && it.mode === 'unit' ? ', ' + c.qty : ''}`;
+}
+function budgetForm(h, it, c){
+  const opt = (v, lab, sel) => `<option value="${escapeHtml(v)}"${sel ? ' selected' : ''}>${escapeHtml(lab)}</option>`;
+  const num = (k, lab, suffix, step = 0.01) => `<label class="ff"><span>${lab}</span><span class="nin"><input type="number" data-b="${k}" step="${step}" min="${BUDGET_NUM[k][0]}" max="${BUDGET_NUM[k][1]}" inputmode="decimal" value="${it[k]}"> ${suffix}</span></label>`;
+  const per = BUDGET_MODES[it.mode].measure === 'length' ? 'm' : 'm²';
+  let f = `<label class="ff"><span>Nom</span><input data-b="name" maxlength="${FIN_MAX.text}" autocomplete="off" value="${escapeHtml(it.name)}"></label>
+    <label class="ff"><span>Prix</span><select data-b="mode">${Object.entries(BUDGET_MODES).map(([k, m]) => opt(k, m.label, it.mode === k)).join('')}</select></label>`;
+  if (it.mode === 'unit') f += `<label class="ff"><span>Unité</span><select data-b="unit">${UNITS.map(u => opt(u, u, it.unit === u)).join('')}</select></label>
+    ${num('price', `Prix ${it.unit === 'unité' ? 'unitaire' : 'du ' + it.unit}`, '€')}
+    ${num('cover', 'Couvre', `m² par ${it.unit}, une couche`, 0.1)}${num('coats', 'Couches', '', 1)}${num('waste', 'Marge', '% (pertes, raccords)', 1)}`;
+  else if (it.mode === 'flat') f += num('price', 'Montant', '€');
+  else f += `${num('price', 'Prix', `€ / ${per}`)}${num('waste', 'Chutes', '%', 1)}`;
+  if (it.mode !== 'flat') f += num('labour', 'Pose', `€ / ${per} (main d’œuvre, facultatif)`);
+  f += `<p class="bcalc" data-bcalc>${escapeHtml(c.calc)}</p>`;
+  if (it.mode !== 'flat') f += budgetPicker(h, it);
+  return `<div class="fin-form">${f}<div class="fin-actions"><button class="mini danger" data-bdel>Supprimer le poste</button></div></div>`;
+}
+// Choix des surfaces : raccourcis pour le niveau affiché, puis une ligne de pastilles par pièce, niveau par niveau
+function budgetPicker(h, it){
+  const length = BUDGET_MODES[it.mode].measure === 'length', on = new Set(it.sel);
+  const chip = (k, lab, q) => `<button class="bchip" data-bsel="${k}" aria-pressed="${on.has(k)}">${lab} <small>${fmt(q, 1)}</small></button>`;
+  const quick = (length ? [['p', 'Toutes les plinthes']] : [['f', 'Tous les sols'], ['w', 'Tous les murs'], ['c', 'Tous les plafonds']])
+    .map(([k, lab]) => `<button class="mini" data-bq="${k}">${lab}</button>`).join('') + '<button class="mini" data-bq="none">Aucune</button>';
+  const rooms = id => levelRooms(h, id).map(r => `<div class="bpick"><span class="bpr">${escapeHtml(r.name)}</span><div class="bchips">${length
+      ? chip(r.id + '|p', 'Plinthes', skirting(r))
+      : chip(r.id + '|f', 'Sol', area(r.pts)) + r.pts.map((_, i) => chip(`${r.id}|w${i}`, `Mur ${i + 1}`, wallArea(r, i))).join('') + chip(r.id + '|c', 'Plafond', area(r.pts))}</div></div>`).join('');
+  // Le niveau affiché d'abord ; les autres repliés, ouverts d'office s'ils portent déjà des surfaces du poste
+  const others = h.levels.slice().reverse().filter(l => l.id !== h.curLevel && levelRooms(h, l.id).length);
+  const used = new Set(it.sel.map(k => (h.rooms.find(r => r.id === k.split('|')[0]) || {}).levelId));
+  const levels = rooms(h.curLevel) + (others.length ? `<details class="bmore"${others.some(l => used.has(l.id)) ? ' open' : ''}><summary>Autres niveaux</summary>${others.map(l => `<p class="lab bpl">${escapeHtml(l.name)}</p>${rooms(l.id)}`).join('')}</details>` : '');
+  return `<p class="status bhint">${$('#housePlan')._v3 ? 'Choisissez les surfaces ci-dessous, ou passez en 2D pour les toucher sur le plan.' : 'Touchez les murs et les sols sur le plan, ou choisissez-les ci-dessous.'}</p>
+    <div class="fin-actions"><span class="lab">${escapeHtml(curLevel(h).name)} :</span>${quick}</div>${levels}`;
+}
+function renderBudget(h){
+  const b = budgetOf(h);
+  if (budgetOpen && !b.items.some(it => it.id === budgetOpen)) budgetOpen = null;
+  $('#budgetBox').classList.toggle('hidden', !h.rooms.length);
+  $('#budgetList').innerHTML = b.items.length ? b.items.map(it => {
+    const c = budgetCost(h, it), open = it.id === budgetOpen;
+    return `<li data-bid="${it.id}" class="${open ? 'on' : ''}"><button class="open" data-bopen aria-expanded="${open}"><b>${escapeHtml(it.name)}</b><span data-bhead>${escapeHtml(budgetHead(h, it, c))}</span></button>
+      <span class="area" data-btotal>${euro(c.total)}</span>${open ? budgetForm(h, it, c) : ''}</li>`;
+  }).join('') : '<li class="empty">Aucun poste. Ajoutez ce que vous voulez changer : peinture, sol, plinthes…</li>';
+  const shop = shoppingList(h.rooms);
+  $('#budgetAdd').innerHTML = '<option value="">Ajouter un poste…</option>'
+    + Object.entries(BUDGET_PRESETS).map(([k, p]) => `<option value="p:${k}">${p.name}</option>`).join('')
+    + (shop.length ? `<optgroup label="D’après une finition notée">${shop.map((g, k) => `<option value="f:${k}">${escapeHtml(finSummary(g.F) || g.F.color)}</option>`).join('')}</optgroup>` : '');
+  if (document.activeElement !== $('#budgetExtra')) $('#budgetExtra').value = b.extra;
+  renderBudgetTotals(h);
+}
+function renderBudgetTotals(h){
+  const t = budgetTotals(h);
+  $('#budgetTotal').innerHTML = [[euro(t.mat), 'Matériaux'], [euro(t.lab), 'Main d’œuvre'], [euro(t.extra), `Imprévus (${fmt(budgetOf(h).extra, 0)} %)`], [euro(t.total), 'Total']]
+    .map(([n, l]) => `<div class="stat"><span class="num">${n}</span><span class="lab">${l}</span></div>`).join('');
+}
+// En cours de saisie : les montants changent, le formulaire garde le focus
+function refreshBudget(h){
+  budgetOf(h).items.forEach(it => {
+    const li = $('#budgetList').querySelector(`[data-bid="${it.id}"]`); if (!li) return;
+    const c = budgetCost(h, it);
+    li.querySelector('[data-bhead]').textContent = budgetHead(h, it, c);
+    li.querySelector('[data-btotal]').textContent = euro(c.total);
+    const calc = li.querySelector('[data-bcalc]'); if (calc) calc.textContent = c.calc;
+  });
+  renderBudgetTotals(h);
+}
+// Changement de structure (poste, mode, surfaces) : plan et liste redessinés même si la liste a le focus
+function budgetChanged(){ save(); renderHouse(); renderBudget(house); }
+function toggleBudgetSurface(key){
+  const it = openItem(); if (!it) return;
+  setBudgetItem(house, it.id, { sel: it.sel.includes(key) ? it.sel.filter(k => k !== key) : [...it.sel, key] });
+  budgetChanged();
+}
+// Toucher le plan : un mur s'il est tout près, sinon le sol de la pièce (ses plinthes pour un poste au mètre)
+function budgetPickAt(e){
+  const svg = $('#hsvg'); if (!svg) return;
+  const q = toMeters(svg, e), it = openItem(), tol = Math.max(0.2, 16 / $('#housePlan')._view.S);
+  let best = null;
+  levelRooms(house).forEach(r => r.pts.forEach((a, i) => { const d = segDist(q, a, r.pts[(i + 1) % r.pts.length]); if (!best || d < best.d) best = { r, i, d }; }));
+  const room = levelRooms(house).find(r => inside(q, r.pts)) || (best && best.d < tol ? best.r : null);
+  if (!room) return;
+  if (BUDGET_MODES[it.mode].measure === 'length') toggleBudgetSurface(room.id + '|p');
+  else if (best && best.d < tol) toggleBudgetSurface(`${best.r.id}|w${best.i}`);
+  else toggleBudgetSurface(room.id + '|f');
+}
+$('#budgetAdd').addEventListener('change', e => {
+  const [k, v] = e.target.value.split(':'); if (!k) return;
+  let it;
+  if (k === 'p') it = newBudgetItem(v);
+  else {
+    const g = shoppingList(house.rooms)[+v]; if (!g) return;
+    it = newBudgetItem(PRESET_OF[g.F.mat] || 'sol', { name: finSummary(g.F) || 'Finition', sel: finishTargets(house, g.F) });
+  }
+  setBudget(house, { items: [...budgetOf(house).items, it] });
+  budgetOpen = it.id; budgetChanged();
+  const price = $('#budgetList').querySelector(`[data-bid="${it.id}"] [data-b="price"]`); if (price) price.focus();
+});
+$('#budgetList').addEventListener('click', e => {
+  const t = e.target.closest('[data-bopen],[data-bsel],[data-bq],[data-bdel]'); if (!t) return;
+  const id = t.closest('[data-bid]').dataset.bid, it = budgetOf(house).items.find(x => x.id === id);
+  if (t.dataset.bopen != null){ budgetOpen = budgetOpen === id ? null : id; budgetChanged(); return; }
+  if (t.dataset.bsel) return toggleBudgetSurface(t.dataset.bsel);
+  if (t.dataset.bdel != null){
+    if (!confirm(`Supprimer le poste « ${it.name} » ?`)) return;
+    setBudget(house, { items: budgetOf(house).items.filter(x => x.id !== id) }); budgetChanged(); return;
+  }
+  // Raccourcis : toutes les surfaces d'un type sur le niveau affiché, ou aucune
+  const k = t.dataset.bq, lv = new Set(levelRooms(house).map(r => r.id));
+  const keep = it.sel.filter(s => k === 'none' ? !lv.has(s.split('|')[0]) : true);
+  const add = k === 'none' ? [] : levelRooms(house).flatMap(r => k === 'w' ? r.pts.map((_, i) => `${r.id}|w${i}`) : [`${r.id}|${k}`]);
+  setBudgetItem(house, id, { sel: [...new Set([...keep, ...add])] }); budgetChanged();
+});
+$('#budgetList').addEventListener('focusin', () => { budgetTyping = false; });
+$('#budgetList').addEventListener('input', e => {
+  const k = e.target.dataset.b; if (!k || e.target.tagName === 'SELECT') return;
+  const id = e.target.closest('[data-bid]').dataset.bid;
+  let v = e.target.value;
+  if (k !== 'name'){
+    const [lo, hi] = BUDGET_NUM[k], n = parseFloat(v);
+    if (isNaN(n)) return; // champ vide en cours de saisie : la valeur précédente reste
+    v = Math.min(hi, Math.max(lo, k === 'coats' || k === 'waste' ? Math.round(n) : n));
+  }
+  setBudgetItem(house, id, { [k]: v });
+  save(); refreshBudget(house);
+  if (k === 'name') $('#budgetList').querySelector(`[data-bid="${id}"] b`).textContent = v;
+});
+$('#budgetList').addEventListener('change', e => {
+  const t = e.target, k = t.dataset.b;
+  if (k && t.tagName === 'SELECT'){ setBudgetItem(house, t.closest('[data-bid]').dataset.bid, { [k]: t.value }); budgetChanged(); }
+  else if (k && k !== 'name' && t.value === '') budgetChanged(); // champ laissé vide : on réaffiche la valeur gardée
+});
+$('#budgetExtra').addEventListener('input', e => {
+  const n = parseFloat(e.target.value); if (isNaN(n)) return;
+  setBudget(house, { extra: Math.min(BUDGET_MAX.extra, Math.max(0, n)) }); save(); renderBudgetTotals(house);
+});
+$('#budgetCopy').addEventListener('click', async () => {
+  const t = budgetTotals(house), b = budgetOf(house);
+  const txt = [`Budget travaux : ${house.name}`, ...b.items.map(it => { const c = budgetCost(house, it);
+      return `- ${it.name}${c.t.length ? ` (${c.t.map(x => `${x.r.name} ${x.label}`).join(', ')})` : ''} : ${c.calc} → ${euro(c.total)}`; }),
+    `Matériaux : ${euro(t.mat)}`, `Main d’œuvre : ${euro(t.lab)}`, `Imprévus (${fmt(b.extra, 0)} %) : ${euro(t.extra)}`, `Total : ${euro(t.total)}`].join('\n');
+  try { await navigator.clipboard.writeText(txt); toast('Budget copié'); }
+  catch(e){ prompt('Copiez le budget :', txt.replace(/\n/g, ' | ')); }
 });
 function renderRoom(){
   const r = roomRef, p = r.pts, h = r.height || 0, A = area(p), P = perimeter(p);
@@ -2427,6 +3316,7 @@ function renderRoom(){
     ? `Coin ${selCorner + 1} sélectionné : faites-le glisser, ou supprimez-le${p.length <= 3 ? ' (il faut au moins 3 coins)' : ''}.`
     : 'Faites glisser les coins (ils s’alignent sur leurs voisins pour rester d’équerre), touchez un « + » pour ajouter un coin, et déplacez portes, fenêtres et appareils sur le plan. Touchez une cote pour la saisir.';
   renderItems(); renderNav();
+  if (!$('#finishList').contains(document.activeElement)) renderFinishes(); else refreshFinishHeads();
   $('#roomStats').innerHTML = [
     [fmt(A)+' m²','Surface au sol'], [fmt(P)+' m','Périmètre'],
     [h ? fmt(P*h)+' m²' : '–','Surface des murs'], [h ? fmt(A*h)+' m³' : '–','Volume']
@@ -2458,9 +3348,11 @@ $('#copyBtn').addEventListener('click', async () => {
   const txt = [r.name, `Surface : ${fmt(area(p))} m²`, `Périmètre : ${fmt(perimeter(p))} m`,
     h ? `Hauteur : ${fmt(h)} m, volume : ${fmt(area(p)*h)} m³` : '',
     ...p.map((a,i) => `Mur ${i+1} : ${fmt(dist(a,p[(i+1)%p.length]))} m`),
-    ...(r.items||[]).filter(i => i.kind === 'opening').map(i => `${itemLabel(i)} (mur ${i.wall+1}) : ${fmt(openingWidth(p, i))} m`),
+    ...(r.items||[]).filter(i => i.kind === 'opening').map(i => `${itemLabel(i)} (mur ${i.wall+1}) : ${fmt(openingWidth(p, i))} × ${fmt(openingHeight(i))} m`
+       + (hasSill(i.type) ? `, allège ${fmt(openingSill(i))} m` : '')),
     ...Object.entries((r.items||[]).filter(i => i.kind === 'device').reduce((c,i) => (c[i.type] = (c[i.type]||0) + 1, c), {}))
-       .map(([k,n]) => `${DEVICES[k] ? DEVICES[k].label : k} : ${n}`)].filter(Boolean).join('\n');
+       .map(([k,n]) => `${DEVICES[k] ? DEVICES[k].label : k} : ${n}`),
+    ...finishLines(r)].filter(Boolean).join('\n');
   try { await navigator.clipboard.writeText(txt); toast('Mesures copiées'); }
   catch(e){ prompt('Copiez les mesures :', txt.replace(/\n/g,' | ')); }
 });

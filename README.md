@@ -11,10 +11,13 @@ Map your home in augmented reality, right from your phone's browser: point at th
 - **Room survey in AR**: aim at the foot of each corner and tap; walls, area and perimeter are computed live. Close the room on the first corner and give it a name.
 - **Whole-house plans**: survey several rooms in one session and they are positioned relative to each other automatically. Rooms surveyed in separate sessions can be arranged by hand (drag, rotate).
 - **Multiple floors**: floors are detected from height changes when you take the stairs, and stay aligned with each other.
-- **Doors and windows**: door, double door, sliding door, window, French window, sliding bay. Swing direction and hinge side can be inverted afterwards.
+- **Doors and windows**: door, double door, sliding door, window, French window, sliding bay. Each one has a width and a height, plus a sill height for windows (standard sizes until you type your own). Swing direction and hinge side can be inverted afterwards.
 - **Electrical devices** with standard French floor-plan symbols: ceiling light, recessed spot, wall light, 16 A and 32 A outlets, switch, two-way switch, RJ45, TV outlet, smoke detector, electrical panel, electricity meter.
 - **Electrical panel**: a "Tableau" screen shows the house plan next to a drawing of your panel: the meter, then one breaker per circuit (name, rating) on DIN rails. Pick a breaker, then tap outlets, lights and switches on the plan to connect or disconnect them; tap a device alone to find its breaker. Devices are tagged C1, C2… on the plans, unconnected ones are listed, and the PDF gets an extra sheet with the circuit table.
+- **Finishes**: note the floor, walls (one wall can differ, like an accent wall) and ceiling of each room: material, brand, reference, shade, colour, paint sheen and a free note. Areas exclude doors and windows, and the quantity to buy is estimated (litres of paint for 2 coats, rolls of wallpaper, m² with 10 % offcuts, skirting length). Brands, references and shades you already typed are suggested, any finish can be reused in one tap, and the house screen groups identical products into a shopping list. Colours also show in the 3D view.
+- **Renovation budget**: list what you want to change (paint, wallpaper, flooring, tiles, skirting, fixed-price jobs) and pick the surfaces from a list or by tapping walls and floors on the 2D plan. Price by unit (pot or roll: price, m² covered per coat, number of coats), per m², per metre or as a flat amount, with optional labour and an offcut margin. Each line shows its calculation; totals add a contingency percentage. A line can start from a finish you noted, with its surfaces already selected.
 - **Manual plan editor** (zoom with wheel, pinch or buttons; full-height plan with a side panel on wide screens): drag corners (they snap square to their neighbours), add or remove corners, type exact wall lengths, move doors, windows and devices on the plan, with undo. Rooms can also be drawn by hand, without AR.
+- **2D / 3D view**: switch the house plan to 3D to see the walls at their real ceiling height, with doors and windows cut through. Orbit, pan and zoom with the mouse or your fingers, show one level or the whole house stacked, and tap a room to open it.
 - **PDF export**: one A4 sheet per floor at a standard scale (1:50, 1:75, 1:100…), with dimensions, title block, room area table and electrical legend.
 - **Share by link**: the whole house is compressed into the link itself (after the `#`, never sent to a server); the recipient previews it and can import it.
 - **Robust tracking**: world anchors, tracking-loss detection, smoothed target, and manual realignment after a tracking jump.
@@ -39,4 +42,4 @@ Plans are stored only in the browser (`localStorage`) of the device where they w
 
 ## Tech
 
-A single self-contained `index.html`: vanilla JavaScript, [three.js](https://threejs.org/) r128 for the AR overlay, SVG for the plans. No build step, no server.
+A single self-contained `index.html`: vanilla JavaScript, [three.js](https://threejs.org/) r128 for the AR overlay and the 3D view, SVG for the plans. No build step, no server.

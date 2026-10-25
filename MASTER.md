@@ -154,3 +154,7 @@ No blurred shadows outside the AR overlay.
   to the meter by a dashed pencil line. "Add" module: dashed `--ink-soft`.
 - **Circuit tag**: C1, C2… in letter 600 8px `--elec` next to each device; `?` in `--ink-soft` for an
   unconnected device in the panel view.
+- **Finish swatch**: 22px square, 1px ink border filled with the noted colour; dashed `--construct` border when no colour. User colours appear only inside swatches and on 3D surfaces, never on UI chrome.
+- **Surface chip** (budget): 40px, 1px `--ink-soft` border, `--sheet` ground, pressed = ink fill + `--on-ink`; area in light tabular figures. Surfaces of the open budget line show on the plan in pencil: 5px stroke for walls, dashed outline + `--pencil-wash` for floors.
+- **2D / 3D switch**: two-segment control at the plan's top left, 1px `--ink-soft` border, pressed = ink fill + `--on-ink` text.
+- **3D view**: `--sheet` walls with `--ink` hairline edges on a `--sheet` ground, floors 5% ink; other levels at 35% opacity with `--construct` edges. Flat lighting, no shadows. Entering 3D lifts the plan from top-down into perspective in `--t-line` (instant with reduced motion); otherwise it only redraws while you move it.
