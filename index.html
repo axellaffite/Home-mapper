@@ -106,6 +106,23 @@ h3{font-size:16px;font-weight:600;letter-spacing:.02em}
 .chk input{width:18px;height:18px;accent-color:var(--pencil);margin:0}
 .arrange{margin-top:var(--s3);padding:var(--s3) var(--s4) var(--s4);background:var(--sheet);border:1px solid var(--ink);border-radius:var(--r0);box-shadow:var(--stack);animation:panel-in var(--t-base) var(--e-draw) both}
 .arrange p{margin:0 0 var(--s2);font-size:15px;color:var(--ink-soft)}
+/* Relevé pour l'ordinateur (téléphone) : écran à part, sans navigation */
+body.linked{padding-bottom:0;padding-right:0}
+body.linked .nav{display:none}
+.linkhead{border:1px solid var(--ink);border-top:3px solid var(--pencil);background:var(--sheet);box-shadow:var(--stack);padding:var(--s3) var(--s4) var(--s4);margin:0 0 var(--s4)}
+.linkhead .lab{display:block}
+.linkhead h1{margin:var(--s2) 0 var(--s1);font-size:32px;overflow-wrap:anywhere}
+.linkhead p{margin:var(--s2) 0 0;font-size:15px;color:var(--ink-soft)}
+.conn{display:flex;align-items:center;gap:var(--s2);margin-top:var(--s3);padding-top:var(--s2);border-top:1px solid var(--hair);font:600 var(--fs-label)/1.2 var(--f-letter);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.conn i{width:8px;height:8px;flex:none;background:var(--construct);transition:background-color var(--t-base) var(--e-draw)}
+.conn[data-s="ok"]{color:var(--ink)}
+.conn[data-s="ok"] i{background:var(--ink)}
+.conn[data-s="lost"]{color:var(--pencil)}
+.conn[data-s="lost"] i{background:var(--pencil)}
+#link .levels{margin-top:var(--s2)}
+#link .sheet{margin-bottom:var(--s4)}
+#linkScan{margin-top:var(--s2)}
+a.btn{text-decoration:none}
 .qr{display:flex;justify-content:center;margin:var(--s3) 0 0}
 .qr svg{display:block;width:216px;height:216px;border:1px solid var(--hair)}
 .rot{display:flex;gap:var(--s2);flex-wrap:wrap}
@@ -445,12 +462,12 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
     <button class="btn btn-main" id="importBtn">Importer dans mes logements</button>
   </div>
   <div class="arrange hidden" id="remotePanel" style="margin:0 0 14px">
-    <p id="remoteHint"></p>
+    <p>Scannez ce code avec un téléphone Android compatible ARCore, dans Chrome. Les pièces relevées sur le téléphone arrivent sur ce plan à la fin de chaque relevé.</p>
     <div class="qr" id="remoteQr" role="img" aria-label="QR code du relevé avec un téléphone"></div>
     <p class="status" id="remoteStatus" role="status"></p>
     <div class="row">
       <button class="btn btn-ghost" id="remoteCopy">Copier le lien</button>
-      <button class="btn btn-ghost" id="remoteStop"></button>
+      <button class="btn btn-ghost" id="remoteStop">Arrêter</button>
     </div>
   </div>
   <div class="levels" id="levelTabs" role="tablist" aria-label="Niveaux"></div>
@@ -581,6 +598,22 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
 </main>
 
 <!-- TABLEAU ÉLECTRIQUE : le plan à gauche, le tableau à droite -->
+<main id="link" class="wrap hidden">
+  <div class="linkhead">
+    <span class="lab">Relevé pour l’ordinateur</span>
+    <h1 id="linkName"></h1>
+    <p>Vous relevez le logement ouvert sur l’ordinateur. À la fin de chaque relevé, les pièces lui sont envoyées : rien n’est enregistré sur ce téléphone.</p>
+    <div class="conn" id="linkConn" role="status"><i aria-hidden="true"></i><span></span></div>
+  </div>
+  <span class="lab">Niveau à relever</span>
+  <div class="levels" id="linkLevels" role="tablist" aria-label="Niveaux"></div>
+  <div class="sheet" id="linkPlan"></div>
+  <button class="btn btn-main" id="linkScan">Lancer le relevé</button>
+  <p class="status" id="linkStatus" role="status"></p>
+  <div class="row hidden" id="linkChromeRow"><a class="btn btn-ghost" id="linkChrome">Ouvrir dans Chrome</a></div>
+  <div class="row"><button class="btn btn-ghost" id="linkQuit">Quitter et revenir à mes logements</button></div>
+</main>
+
 <main id="panel" class="wrap screen hidden">
  <div class="head">
   <button class="back" id="panelBack">Retour au logement</button>
@@ -2388,22 +2421,20 @@ function stopRemote(){
   const r = remote; remote = null;
   if (r && r.peer) r.peer.destroy();
 }
-function setRemoteStatus(r, msg, warn){ if (remote !== r) return; r.msg = msg; r.warn = !!warn; renderRemotePanel(); }
+function setRemoteStatus(r, msg, warn){
+  if (remote !== r) return;
+  r.msg = msg; r.warn = !!warn;
+  if (r.role === 'desktop') renderRemotePanel(); else if (visible('#link')) renderLink();
+}
 function renderRemotePanel(){
-  const r = remote, p = $('#remotePanel');
-  const desk = !!r && r.role === 'desktop' && r.house === house, phone = !!house && !!house.remote;
-  p.classList.toggle('hidden', !desk && !phone);
-  if (!desk && !phone) return;
-  $('#remoteHint').textContent = desk
-    ? 'Scannez ce code avec un téléphone Android compatible ARCore, dans Chrome. Les pièces relevées sur le téléphone arrivent sur ce plan à la fin de chaque relevé.'
-    : 'Plan de l’ordinateur : lancez « Relevé RA », les pièces relevées sont envoyées à l’ordinateur à la fin du relevé.';
-  $('#remoteQr').classList.toggle('hidden', !desk || !r.qr);
-  if (desk && r.qr && $('#remoteQr')._qr !== r.qr){ $('#remoteQr').innerHTML = r.qr; $('#remoteQr')._qr = r.qr; }
-  $('#remoteCopy').classList.toggle('hidden', !desk || !r.qr);
-  $('#remoteStop').textContent = desk ? 'Arrêter' : 'Quitter';
-  const msg = phone && !r ? 'Déconnecté de l’ordinateur.' : r.msg || '';
-  $('#remoteStatus').textContent = msg;
-  $('#remoteStatus').classList.toggle('warn', phone && !r || !!(r && r.warn));
+  const r = remote, desk = !!r && r.role === 'desktop' && r.house === house;
+  $('#remotePanel').classList.toggle('hidden', !desk);
+  if (!desk) return;
+  $('#remoteQr').classList.toggle('hidden', !r.qr);
+  if (r.qr && $('#remoteQr')._qr !== r.qr){ $('#remoteQr').innerHTML = r.qr; $('#remoteQr')._qr = r.qr; }
+  $('#remoteCopy').classList.toggle('hidden', !r.qr);
+  $('#remoteStatus').textContent = r.msg || '';
+  $('#remoteStatus').classList.toggle('warn', r.warn);
 }
 function onPeer(r){
   r.peer.on('disconnected', () => { if (remote === r && !r.peer.destroyed) r.peer.reconnect(); });
@@ -2461,11 +2492,21 @@ function receiveRooms(r, d){
 }
 
 /* Téléphone : ouvert par le QR code, envoie les pièces à la fin du relevé */
+// Le QR code porte #r=… ; ?r=… sert au passage vers Chrome, dont les liens « intent » réservent le #
 function openRemoteLink(){
   const m = location.hash.match(new RegExp('^#' + REMOTE_KEY + '=(' + REMOTE_ID + ')$'));
-  if (!m) return false;
-  if (!remote || remote.role !== 'phone' || remote.id !== m[1]) joinRemote(m[1]);
+  const q = new URLSearchParams(location.search).get(REMOTE_KEY);
+  const id = m ? m[1] : q && new RegExp('^' + REMOTE_ID + '$').test(q) ? q : null;
+  if (!id) return false;
+  if (!remote || remote.role !== 'phone' || remote.id !== id) joinRemote(id);
   return true;
+}
+// Android sans WebXR (Firefox…) : ouvre la même liaison dans Chrome, ou sur sa fiche Play Store s'il est absent
+const offerChrome = () => /Android/i.test(navigator.userAgent) && !navigator.xr;
+function chromeIntent(id){
+  const u = new URL(location.href); u.hash = ''; u.search = '?' + REMOTE_KEY + '=' + id;
+  return `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=${u.protocol.slice(0, -1)};package=com.android.chrome;`
+    + `S.browser_fallback_url=${encodeURIComponent('https://play.google.com/store/apps/details?id=com.android.chrome')};end`;
 }
 async function joinRemote(id){
   stopRemote();
@@ -2491,23 +2532,65 @@ function receiveHouse(r, d){
   let h;
   try { h = unpackHouse(d.h); }
   catch (e){ console.error('Plan reçu illisible', e); toast('Plan reçu de l’ordinateur illisible'); return; }
-  const lvl = h.levels.find(l => l.order === d.l);
+  const order = r.house ? curLevel(r.house).order : d.l, lvl = h.levels.find(l => l.order === order);
   r.house = { ...h, id: 'remote', remote: true, curLevel: lvl ? lvl.id : null };
   if (r.outbox){
-    r.outbox = null;
+    r.sent = { n: r.outbox.n, at: Date.now() }; r.outbox = null;
     try { localStorage.removeItem(DRAFT); } catch(e){}
     toast('Pièces envoyées à l’ordinateur');
   }
-  if (!session) openHouse(r.house); // pendant un relevé, le plan à jour s'affiche à la fin
+  if (!session) openLinkScreen(r); // pendant un relevé, le plan à jour s'affiche à la fin
 }
 // Fin d'un relevé sur le téléphone : les pièces partent vers l'ordinateur, le brouillon reste jusqu'à l'accusé de réception
 function sendSession(list){
   const r = remote;
   if (!r || r.role !== 'phone'){ toast('Ordinateur déconnecté : le relevé est conservé sur ce téléphone'); return; }
-  r.outbox = { t: 'rooms', v: REMOTE_V, k: uid('k'), l: curLevel(house).order, h: packSession(list) };
+  r.outbox = { t: 'rooms', v: REMOTE_V, k: uid('k'), l: curLevel(house).order, h: packSession(list), n: list.length };
   if (connected(r)) r.conn.send(r.outbox); else phoneConnect(r);
-  toast('Envoi à l’ordinateur…');
 }
+function openLinkScreen(r){
+  const first = !visible('#link');
+  house = r.house; roomRef = null;
+  renderLink();
+  if (first){ show('#link'); drawIn($('#linkPlan'), levelRooms(house).length); }
+}
+function renderLink(){
+  const r = remote, h = house;
+  if (!h || !h.remote) return;
+  const lvl = curLevel(h), all = h.rooms, rooms = levelRooms(h);
+  $('#linkName').textContent = h.name;
+  const on = connected(r), st = !r || (r.warn && !on) ? 'lost' : on ? 'ok' : 'wait';
+  $('#linkConn').dataset.s = st;
+  $('#linkConn span').textContent = st === 'ok' ? 'Connecté à l’ordinateur' : st === 'lost' ? 'Déconnecté de l’ordinateur' : 'Connexion à l’ordinateur…';
+  $('#linkLevels').innerHTML = h.levels.slice().reverse().map(l =>
+    `<button role="tab" data-l="${l.id}" aria-selected="${l.id === lvl.id}">${escapeHtml(l.name)}<small>${levelRooms(h, l.id).length}</small></button>`).join('');
+  const plan = $('#linkPlan');
+  plan.innerHTML = all.length
+    ? houseSVG(all, makeView(all), { house: h, level: lvl.id, ghost: !rooms.length, elec: true })
+      + (rooms.length ? '' : '<div class="emptyplan">Aucune pièce sur ce niveau. Les pointillés montrent les autres niveaux.</div>')
+    : '<div class="emptyplan">Aucune pièce sur l’ordinateur pour l’instant.</div>';
+  $('#linkScan').disabled = !arSupported;
+  const chrome = !!r && !arSupported && offerChrome();
+  $('#linkChromeRow').classList.toggle('hidden', !chrome);
+  if (chrome) $('#linkChrome').href = chromeIntent(r.id);
+  const n = k => `${k} pièce${k > 1 ? 's' : ''}`, at = t => new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const msg = !arSupported ? (chrome ? 'Ce navigateur ne gère pas la réalité augmentée. Ouvrez ce relevé dans Chrome : la liaison avec l’ordinateur y est reprise sans rescanner.' : arMessage)
+    : r && r.outbox ? `Envoi de ${n(r.outbox.n)} à l’ordinateur…` + (on ? '' : ' Il partira dès que la connexion revient.')
+    : !r ? 'Le lien avec l’ordinateur est coupé : réaffichez le QR code sur l’ordinateur et scannez-le à nouveau.'
+    : r.sent ? `${n(r.sent.n)} envoyée${r.sent.n > 1 ? 's' : ''} à l’ordinateur à ${at(r.sent.at)}. Relevez d’autres pièces, ou quittez.`
+    : `Le relevé commence au niveau « ${lvl.name.toLowerCase()} ». Si vous changez d’étage, les pièces sont rangées au bon niveau.`;
+  $('#linkStatus').textContent = msg;
+  $('#linkStatus').classList.toggle('warn', !arSupported || !r || (!!r.outbox && !on));
+}
+$('#linkLevels').addEventListener('click', e => {
+  const b = e.target.closest('[data-l]'); if (!b || !house || !house.remote) return;
+  house.curLevel = b.dataset.l; renderLink(); drawIn($('#linkPlan'), levelRooms(house).length);
+});
+$('#linkScan').addEventListener('click', () => { if (house && house.remote && arSupported) startAR(); });
+$('#linkQuit').addEventListener('click', () => {
+  if (remote && remote.outbox && !confirm('Des pièces n’ont pas encore été reçues par l’ordinateur. Quitter quand même ? Elles restent récupérables sur ce téléphone.')) return;
+  stopRemote(); history.replaceState(null, '', location.pathname); house = null; renderHome(); show('#home');
+});
 
 $('#remoteCopy').addEventListener('click', async () => {
   if (!remote || remote.role !== 'desktop') return;
@@ -2515,12 +2598,7 @@ $('#remoteCopy').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(url); toast('Lien copié dans le presse-papiers'); }
   catch (e){ prompt('Copiez ce lien :', url); }
 });
-$('#remoteStop').addEventListener('click', () => {
-  const phone = !!house && !!house.remote;
-  stopRemote();
-  if (!phone){ renderRemotePanel(); return; }
-  clearShareHash(); house = null; renderHome(); show('#home');
-});
+$('#remoteStop').addEventListener('click', () => { stopRemote(); renderRemotePanel(); });
 
 /* ---------- Navigation ---------- */
 // Les murs d'un plan se tracent une fois à l'ouverture (n pièces décalées de --t-stagger)
@@ -2532,7 +2610,7 @@ function drawIn(el, n){
   el.style.setProperty('--n', n); el.classList.add('drawing');
   clearTimeout(el._draw); el._draw = setTimeout(() => el.classList.remove('drawing'), n * STAGGER_MS + LINE_MS + 520);
 }
-const SCREENS = ['#home', '#house', '#room', '#panel'];
+const SCREENS = ['#home', '#house', '#room', '#panel', '#link'];
 function show(id){
   const leaving = SCREENS.map(s => $(s)).find(el => el.id !== id.slice(1) && !el.classList.contains('hidden'));
   SCREENS.forEach(s => { const el = $(s); if (s === id){ clearTimeout(el._leave); el.classList.remove('leaving'); el.style.cssText = ''; } });
@@ -2544,6 +2622,7 @@ function show(id){
     leaving._leave = setTimeout(() => { leaving.classList.remove('leaving'); leaving.style.cssText = ''; }, EXIT_MS);
   }
   SCREENS.forEach(s => $(s).classList.toggle('hidden', s !== id));
+  document.body.classList.toggle('linked', id === '#link');
   window.scrollTo(0,0);
   renderNav();
   if (wideMQ.matches) refreshPlans(); // le cadrage dépend de la taille réelle de la zone
@@ -2563,7 +2642,7 @@ function renderNav(){
     if (k === m) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     b.disabled = k !== 'home' && !house;
   });
-  $('#nav [data-nav="scan"]').classList.toggle('off', !house || house.demo || (!arSupported && !!house.remote));
+  $('#nav [data-nav="scan"]').classList.toggle('off', !house || house.demo);
 }
 function goPlan(){
   houseEditing = false; arranging = false; selIdx = null; aView = null; editing = false;
@@ -2578,7 +2657,6 @@ function goScan(){
   if (house.demo){ toast(house.shared ? 'Importez ce logement pour y relever des pièces' : 'Le logement d’exemple ne peut pas être relevé : créez un logement'); return; }
   if (!visible('#house')) goPlan();
   if (arSupported) startAR();
-  else if (house.remote) toast(arMessage || 'Réalité augmentée indisponible sur cet appareil');
   else startRemote(); // sans RA (ordinateur) : QR code pour relever avec un téléphone
 }
 $('#nav').addEventListener('click', e => {
@@ -2713,14 +2791,13 @@ function renderHouse(){
   $('#shareBtn').classList.toggle('hidden', !all.length);
   $('#pdfBtn').classList.toggle('hidden', !all.length);
   renderRemotePanel();
-  $('#houseStatus').textContent = h.remote ? (arSupported ? '' : arMessage)
-    : h.shared ? 'Les modifications faites ici sont conservées si vous importez le logement.'
+  $('#houseStatus').textContent = h.shared ? 'Les modifications faites ici sont conservées si vous importez le logement.'
     : h.demo ? 'Logement d’exemple : changez de niveau, ouvrez une pièce ou essayez les outils de l’Éditeur.'
     : arSupported ? `« Relevé RA » relève le niveau affiché (${lvl.name.toLowerCase()}). Si vous changez d’étage pendant le relevé, les pièces sont rangées au bon niveau automatiquement.`
     : arMessage + ' Touchez « Relevé RA » pour relever avec un téléphone en scannant un QR code, ou dessinez les pièces dans l’Éditeur.';
   $('#houseStatus').classList.toggle('warn', !h.demo && !arSupported);
-  $('#delHouse').classList.toggle('hidden', !!h.demo || !!h.remote);
-  $('#delLevel').classList.toggle('hidden', !!h.demo || !!h.remote || h.levels.length < 2);
+  $('#delHouse').classList.toggle('hidden', !!h.demo);
+  $('#delLevel').classList.toggle('hidden', !!h.demo || h.levels.length < 2);
   renderNav();
 }
 $('#levelTabs').addEventListener('click', e => {
@@ -4149,9 +4226,9 @@ function onEnd(){
   sessionItems = []; pendingOpen = null; mode = 'corners';
   $('#overlay').classList.add('hidden');
   if (house && house.remote){
-    if (remote && remote.house && remote.house !== house) house = remote.house; // plan reçu pendant le relevé
+    if (remote && remote.house) house = remote.house; // plan reçu pendant le relevé
     if (list.length) sendSession(list);
-    renderHouse(); show('#house');
+    renderLink(); show('#link');
   } else if (list.length && house){
     const separate = addSessionRooms(house, list);
     try { localStorage.removeItem(DRAFT); } catch(e){}
@@ -4181,8 +4258,9 @@ async function startAR(){
     });
   } catch (e){
     overlay.classList.add('hidden');
-    $('#houseStatus').textContent = 'Impossible de lancer la RA : ' + (e.message || e.name) + '. Ouvrez cette page directement dans Chrome sur Android.';
-    $('#houseStatus').classList.add('warn');
+    const st = $(house.remote ? '#linkStatus' : '#houseStatus');
+    st.textContent = 'Impossible de lancer la RA : ' + (e.message || e.name) + '. Ouvrez cette page directement dans Chrome sur Android.';
+    st.classList.add('warn');
     return;
   }
   SCREENS.forEach(s => $(s).classList.add('hidden'));
@@ -4225,6 +4303,7 @@ async function checkSupport(){
     setStatus('La RA est bloquée dans cette vue. Ouvrez la page directement dans Chrome (menu ⋮, Ouvrir dans le navigateur).', true);
   }
   if (house && !$('#house').classList.contains('hidden')) renderHouse();
+  if (visible('#link')) renderLink();
   renderNav();
 }
 
