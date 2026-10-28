@@ -44,3 +44,13 @@ Plans are stored only in the browser (`localStorage`) of the device where they w
 ## Tech
 
 A single self-contained `index.html`: vanilla JavaScript, [three.js](https://threejs.org/) r128 for the AR overlay and the 3D view, SVG for the plans, PeerJS and qrcode-generator (loaded on demand) for phone pairing. No build step, no server.
+
+Phone pairing falls back on Cloudflare's TURN relay when the two devices can't connect directly. The short-lived TURN credentials come from a small Cloudflare Worker in `turn/`, which keeps the TURN key secret. To deploy it, create a TURN key in the Cloudflare dashboard (Realtime > TURN), then from `turn/`:
+
+```bash
+npx wrangler secret put TURN_KEY_ID
+npx wrangler secret put TURN_KEY_API_TOKEN
+npx wrangler deploy
+```
+
+and set `TURN_URL` in `index.html` to the Worker's URL.

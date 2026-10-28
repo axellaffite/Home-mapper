@@ -1,0 +1,7 @@
+name = "home-mapper-turn"
+main = "worker.js"
+compatibility_date = "2025-09-01"
+
+# Secrets (clé TURN du tableau de bord Cloudflare, Realtime > TURN) :
+#   npx wrangler secret put TURN_KEY_ID
+#   npx wrangler secret put TURN_KEY_API_TOKEN

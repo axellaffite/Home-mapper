@@ -2399,10 +2399,13 @@ $('#pdfBtn').addEventListener('click', async () => {
 
 /* ---------- Relevé avec un téléphone (QR code sur l'ordinateur) ---------- */
 // Le service public de PeerJS ne sert qu'à mettre les deux navigateurs en relation ;
-// les pièces voyagent ensuite directement d'un appareil à l'autre en WebRTC
+// les pièces voyagent ensuite d'un appareil à l'autre en WebRTC, directement ou par le relais TURN de Cloudflare
+// quand les réseaux empêchent la liaison directe (4G, routeur sans bouclage, Wi-Fi isolant les appareils)
 const PEER_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js';
 const QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
-const REMOTE_V = 1, REMOTE_KEY = 'r', REMOTE_ID = 'hm-[a-z0-9]{20}';
+const TURN_URL = ''; // Worker turn/worker.js : identifiants TURN temporaires
+const STUN = [{ urls: 'stun:stun.cloudflare.com:3478' }, { urls: 'stun:stun.l.google.com:19302' }];
+const REMOTE_V = 1, REMOTE_KEY = 'r', REMOTE_ID = 'hm-[a-z0-9]{20}', LINK_TIMEOUT = 20000;
 let remote = null; // { role: 'desktop' | 'phone', id, peer, conn, house, seen | outbox }
 const newRemoteId = () => 'hm-' + Array.from(crypto.getRandomValues(new Uint8Array(20)), b => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('');
 function remoteUrl(id){ const u = new URL(location.href); u.search = ''; u.hash = REMOTE_KEY + '=' + id; return u.href; }
@@ -2417,9 +2420,21 @@ const peerError = e => e && e.type === 'peer-unavailable' ? 'L’ordinateur n’
   : e && e.type === 'browser-incompatible' ? 'Ce navigateur ne gère pas WebRTC.'
   : 'Connexion impossible : vérifiez la connexion internet des deux appareils.';
 const connected = r => !!(r && r.conn && r.conn.open);
+// Sans relais (Worker injoignable), la liaison directe reste possible sur la plupart des réseaux
+async function iceServers(){
+  if (!TURN_URL) return STUN;
+  try {
+    const res = await fetch(TURN_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const { iceServers } = await res.json();
+    if (!Array.isArray(iceServers) || !iceServers.length) throw new Error('réponse vide');
+    return iceServers;
+  } catch (e){ console.error('Relais TURN indisponible', e); return STUN; }
+}
+const newPeer = (id, ice) => new Peer(id, { config: { iceServers: ice } });
 function stopRemote(){
   const r = remote; remote = null;
-  if (r && r.peer) r.peer.destroy();
+  if (r){ clearTimeout(r.timer); if (r.peer) r.peer.destroy(); }
 }
 function setRemoteStatus(r, msg, warn){
   if (remote !== r) return;
@@ -2447,12 +2462,13 @@ async function startRemote(){
   stopRemote();
   const r = remote = { role: 'desktop', id: newRemoteId(), house, seen: new Set() };
   setRemoteStatus(r, 'Préparation du QR code…');
-  try { await Promise.all([loadScript(PEER_LIB), loadScript(QR_LIB)]); }
+  let ice;
+  try { [ice] = await Promise.all([iceServers(), loadScript(PEER_LIB), loadScript(QR_LIB)]); }
   catch (e){ console.error(e); setRemoteStatus(r, 'Chargement impossible : vérifiez la connexion internet.', true); return; }
   if (remote !== r) return;
   r.qr = qrSVG(remoteUrl(r.id));
   setRemoteStatus(r, 'Connexion au service de mise en relation…');
-  r.peer = new Peer(r.id);
+  r.peer = newPeer(r.id, ice);
   onPeer(r);
   r.peer.on('open', () => { if (!connected(r)) setRemoteStatus(r, 'En attente du téléphone.'); });
   r.peer.on('connection', c => acceptPhone(r, c));
@@ -2461,7 +2477,10 @@ function acceptPhone(r, c){
   if (remote !== r){ c.close(); return; }
   const prev = r.conn; r.conn = c; // le dernier téléphone qui scanne prend la main
   if (prev) prev.close();
-  c.on('open', () => { if (r.conn !== c) return; sendHouse(r); setRemoteStatus(r, 'Téléphone connecté. Lancez « Relevé RA » sur le téléphone.'); });
+  setRemoteStatus(r, 'Téléphone détecté, établissement de la liaison…');
+  clearTimeout(r.timer);
+  r.timer = setTimeout(() => { if (r.conn === c && !c.open) setRemoteStatus(r, 'La liaison avec le téléphone n’aboutit pas. Vérifiez la connexion internet des deux appareils ; le téléphone réessaie tout seul.', true); }, LINK_TIMEOUT);
+  c.on('open', () => { if (r.conn !== c) return; clearTimeout(r.timer); sendHouse(r); setRemoteStatus(r, 'Téléphone connecté. Lancez « Relevé RA » sur le téléphone.'); });
   c.on('data', d => { if (r.conn === c) receiveRooms(r, d); });
   c.on('close', () => { if (r.conn === c){ r.conn = null; setRemoteStatus(r, 'Téléphone déconnecté. Scannez à nouveau le code pour continuer.', true); } });
 }
@@ -2511,19 +2530,25 @@ function chromeIntent(id){
 async function joinRemote(id){
   stopRemote();
   const r = remote = { role: 'phone', id, outbox: null };
-  toast('Connexion à l’ordinateur…');
-  try { await loadScript(PEER_LIB); }
-  catch (e){ console.error(e); toast('Chargement impossible : vérifiez la connexion internet'); return; }
+  openLinkScreen(r); // l'écran du relevé s'affiche tout de suite, le plan arrive avec la liaison
+  let ice;
+  try { [ice] = await Promise.all([iceServers(), loadScript(PEER_LIB)]); }
+  catch (e){ console.error(e); setRemoteStatus(r, 'Chargement impossible : vérifiez la connexion internet.', true); return; }
   if (remote !== r) return;
-  r.peer = new Peer();
+  r.peer = newPeer(undefined, ice);
   onPeer(r);
-  r.peer.on('error', e => { if (remote === r && !r.house) toast(peerError(e)); });
   r.peer.on('open', () => phoneConnect(r));
 }
 function phoneConnect(r){
   if (remote !== r || !r.peer || r.peer.disconnected || connected(r)) return;
   const c = r.conn = r.peer.connect(r.id, { reliable: true });
-  c.on('open', () => { if (r.conn !== c) return; setRemoteStatus(r, 'Connecté à l’ordinateur.'); if (r.outbox) c.send(r.outbox); });
+  clearTimeout(r.timer);
+  r.timer = setTimeout(() => { // liaison bloquée sans erreur : on prévient et on recommence
+    if (r.conn !== c || c.open) return;
+    setRemoteStatus(r, 'La liaison avec l’ordinateur n’aboutit pas. Nouvel essai…', true);
+    r.conn = null; c.close(); phoneConnect(r);
+  }, LINK_TIMEOUT);
+  c.on('open', () => { if (r.conn !== c) return; clearTimeout(r.timer); setRemoteStatus(r, 'Connecté à l’ordinateur.'); if (r.outbox) c.send(r.outbox); });
   c.on('data', d => { if (r.conn === c) receiveHouse(r, d); });
   c.on('close', () => { if (r.conn === c){ r.conn = null; setRemoteStatus(r, 'Connexion à l’ordinateur perdue.', true); } });
 }
@@ -2550,37 +2575,38 @@ function sendSession(list){
 }
 function openLinkScreen(r){
   const first = !visible('#link');
-  house = r.house; roomRef = null;
+  house = r.house || null; roomRef = null;
   renderLink();
-  if (first){ show('#link'); drawIn($('#linkPlan'), levelRooms(house).length); }
+  if (first){ show('#link'); if (house) drawIn($('#linkPlan'), levelRooms(house).length); }
 }
 function renderLink(){
-  const r = remote, h = house;
-  if (!h || !h.remote) return;
-  const lvl = curLevel(h), all = h.rooms, rooms = levelRooms(h);
-  $('#linkName').textContent = h.name;
+  const r = remote, h = house && house.remote ? house : null; // h : plan de l'ordinateur, absent tant que la liaison n'est pas faite
   const on = connected(r), st = !r || (r.warn && !on) ? 'lost' : on ? 'ok' : 'wait';
   $('#linkConn').dataset.s = st;
   $('#linkConn span').textContent = st === 'ok' ? 'Connecté à l’ordinateur' : st === 'lost' ? 'Déconnecté de l’ordinateur' : 'Connexion à l’ordinateur…';
-  $('#linkLevels').innerHTML = h.levels.slice().reverse().map(l =>
-    `<button role="tab" data-l="${l.id}" aria-selected="${l.id === lvl.id}">${escapeHtml(l.name)}<small>${levelRooms(h, l.id).length}</small></button>`).join('');
-  const plan = $('#linkPlan');
-  plan.innerHTML = all.length
-    ? houseSVG(all, makeView(all), { house: h, level: lvl.id, ghost: !rooms.length, elec: true })
+  $('#linkName').textContent = h ? h.name : 'Logement de l’ordinateur';
+  const lvl = h && curLevel(h), all = h ? h.rooms : [], rooms = h ? levelRooms(h) : [];
+  $('#linkLevels').innerHTML = h ? h.levels.slice().reverse().map(l =>
+    `<button role="tab" data-l="${l.id}" aria-selected="${l.id === lvl.id}">${escapeHtml(l.name)}<small>${levelRooms(h, l.id).length}</small></button>`).join('') : '';
+  $('#linkPlan').innerHTML = !h ? '<div class="emptyplan">Le plan s’affiche dès que l’ordinateur répond.</div>'
+    : all.length ? houseSVG(all, makeView(all), { house: h, level: lvl.id, ghost: !rooms.length, elec: true })
       + (rooms.length ? '' : '<div class="emptyplan">Aucune pièce sur ce niveau. Les pointillés montrent les autres niveaux.</div>')
     : '<div class="emptyplan">Aucune pièce sur l’ordinateur pour l’instant.</div>';
-  $('#linkScan').disabled = !arSupported;
+  $('#linkScan').disabled = !arSupported || !h;
   const chrome = !!r && !arSupported && offerChrome();
   $('#linkChromeRow').classList.toggle('hidden', !chrome);
   if (chrome) $('#linkChrome').href = chromeIntent(r.id);
   const n = k => `${k} pièce${k > 1 ? 's' : ''}`, at = t => new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  const msg = !arSupported ? (chrome ? 'Ce navigateur ne gère pas la réalité augmentée. Ouvrez ce relevé dans Chrome : la liaison avec l’ordinateur y est reprise sans rescanner.' : arMessage)
-    : r && r.outbox ? `Envoi de ${n(r.outbox.n)} à l’ordinateur…` + (on ? '' : ' Il partira dès que la connexion revient.')
-    : !r ? 'Le lien avec l’ordinateur est coupé : réaffichez le QR code sur l’ordinateur et scannez-le à nouveau.'
+  const lost = !!r && r.warn && !on;
+  const msg = !r ? 'Le lien avec l’ordinateur est coupé : réaffichez le QR code sur l’ordinateur et scannez-le à nouveau.'
+    : r.outbox ? `Envoi de ${n(r.outbox.n)} à l’ordinateur…` + (on ? '' : ' Il partira dès que la connexion revient.')
+    : lost ? r.msg
+    : !arSupported ? (chrome ? 'Ce navigateur ne gère pas la réalité augmentée. Ouvrez ce relevé dans Chrome : la liaison avec l’ordinateur y est reprise sans rescanner.' : arMessage)
+    : !h ? 'Connexion à l’ordinateur…'
     : r.sent ? `${n(r.sent.n)} envoyée${r.sent.n > 1 ? 's' : ''} à l’ordinateur à ${at(r.sent.at)}. Relevez d’autres pièces, ou quittez.`
     : `Le relevé commence au niveau « ${lvl.name.toLowerCase()} ». Si vous changez d’étage, les pièces sont rangées au bon niveau.`;
   $('#linkStatus').textContent = msg;
-  $('#linkStatus').classList.toggle('warn', !arSupported || !r || (!!r.outbox && !on));
+  $('#linkStatus').classList.toggle('warn', !r || lost || !arSupported || (!!r.outbox && !on));
 }
 $('#linkLevels').addEventListener('click', e => {
   const b = e.target.closest('[data-l]'); if (!b || !house || !house.remote) return;
