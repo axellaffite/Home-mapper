@@ -2052,6 +2052,7 @@ function v3Controls(canvas){
 /* ---------- Partage par lien ---------- */
 // Le logement voyage compressé dans le fragment (#s=…) : il n'est jamais envoyé à un serveur
 const SHARE_V = 1, SHARE_KEY = 's', MM = 1000, TT = 10000;
+const CEIL_REACH = 20; // dépassement admis, en longueurs de mur, du pied d'un appareil au plafond
 const SHARE_MAX = { hash: 100000, json: 2000000, levels: 50, rooms: 500, pts: 200, items: 500, name: 80 };
 const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
 // Format compact : coordonnées en millimètres, positions sur les murs en dix-millièmes, sans identifiants
@@ -2131,8 +2132,10 @@ function unpackItem(a, n, int, cids){
     return { id: uid('i'), kind: 'opening', type, wall: int(a[2], 0, n - 1), t0: int(a[3], 0, TT) / TT, t1: int(a[4], 0, TT) / TT, swingOut: !!(f & 1), hingeEnd: !!(f & 2),
              height: opt(a[6], OPEN_MAX.height), sill: opt(a[7], OPEN_MAX.sill) };
   }
+  // Au plafond, le pied sur le mur peut tomber dans son prolongement (pièce non rectangulaire) : t sort de [0, 1]
+  const reach = type => DEVICES[type].wall ? [0, TT] : [-CEIL_REACH * TT, (1 + CEIL_REACH) * TT];
   if (k === 'd' && own(DEVICES, type))
-    return { id: uid('i'), kind: 'device', type, wall: int(a[2], 0, n - 1), t: int(a[3], 0, TT) / TT, d: int(a[4], 0, 100 * MM) / MM,
+    return { id: uid('i'), kind: 'device', type, wall: int(a[2], 0, n - 1), t: int(a[3], ...reach(type)) / TT, d: int(a[4], 0, 100 * MM) / MM,
              h: a[5] == null ? null : int(a[5], 0, 100 * MM) / MM,
              circuit: a[6] == null || !DEVICES[type].circ ? null : cids[int(a[6], 0, cids.length - 1)] };
   return null; // type inconnu (version plus récente) : ignoré
