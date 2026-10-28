@@ -106,6 +106,8 @@ h3{font-size:16px;font-weight:600;letter-spacing:.02em}
 .chk input{width:18px;height:18px;accent-color:var(--pencil);margin:0}
 .arrange{margin-top:var(--s3);padding:var(--s3) var(--s4) var(--s4);background:var(--sheet);border:1px solid var(--ink);border-radius:var(--r0);box-shadow:var(--stack);animation:panel-in var(--t-base) var(--e-draw) both}
 .arrange p{margin:0 0 var(--s2);font-size:15px;color:var(--ink-soft)}
+.qr{display:flex;justify-content:center;margin:var(--s3) 0 0}
+.qr svg{display:block;width:216px;height:216px;border:1px solid var(--hair)}
 .rot{display:flex;gap:var(--s2);flex-wrap:wrap}
 .rot button{flex:1 1 60px;min-height:44px;border-radius:var(--r1);border:1px solid var(--ink-soft);background:var(--sheet);color:var(--ink);font:600 15px var(--f-letter);font-variant-numeric:tabular-nums}
 /* Cartouche des statistiques : libellé au-dessus de la valeur */
@@ -441,6 +443,15 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
   <div class="arrange hidden" id="sharedPanel" style="margin:0 0 14px">
     <p>Logement reçu par lien : vous le consultez sans l’enregistrer.</p>
     <button class="btn btn-main" id="importBtn">Importer dans mes logements</button>
+  </div>
+  <div class="arrange hidden" id="remotePanel" style="margin:0 0 14px">
+    <p id="remoteHint"></p>
+    <div class="qr" id="remoteQr" role="img" aria-label="QR code du relevé avec un téléphone"></div>
+    <p class="status" id="remoteStatus" role="status"></p>
+    <div class="row">
+      <button class="btn btn-ghost" id="remoteCopy">Copier le lien</button>
+      <button class="btn btn-ghost" id="remoteStop"></button>
+    </div>
   </div>
   <div class="levels" id="levelTabs" role="tablist" aria-label="Niveaux"></div>
   <div class="levelbar">
@@ -1385,8 +1396,8 @@ function uniqueName(base, taken){
   let k = 2; while (taken.includes(base+' '+k)) k++; return base+' '+k;
 }
 
-// Ajoute les pièces d'un relevé AR (coordonnées de session) au logement
-function addSessionRooms(h, list){
+// Ajoute les pièces d'un relevé AR (coordonnées de session) au logement, à partir du niveau base (niveau affiché par défaut)
+function addSessionRooms(h, list, base){
   if (!list.length) return;
   const sid = uid('s');
   const ang = -longestAngle(list[0].pts);
@@ -1396,7 +1407,7 @@ function addSessionRooms(h, list){
   if (h.rooms.length){ const [, hy0, hx1] = bbox(h.rooms.map(r=>r.pts)); ox = hx1 + 1.5 - gx0; oy = hy0 - gy0; separate = true; }
   polys = polys.map(p => p.map(([x,y]) => [x+ox, y+oy]));
   ensureLevels(h);
-  const base = curLevel(h).order;
+  if (base == null) base = curLevel(h).order;
   list.forEach((r,i) => {
     const lvl = levelByOrder(h, base + (r.dl || 0), true);
     h.rooms.push({ id: uid('r'), name: r.name, pts: polys[i], height: 2.5, sid, levelId: lvl.id, items: r.items || [] });
@@ -2353,6 +2364,164 @@ $('#pdfBtn').addEventListener('click', async () => {
   finally { b.disabled = false; b.textContent = 'Exporter en PDF'; }
 });
 
+/* ---------- Relevé avec un téléphone (QR code sur l'ordinateur) ---------- */
+// Le service public de PeerJS ne sert qu'à mettre les deux navigateurs en relation ;
+// les pièces voyagent ensuite directement d'un appareil à l'autre en WebRTC
+const PEER_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js';
+const QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+const REMOTE_V = 1, REMOTE_KEY = 'r', REMOTE_ID = 'hm-[a-z0-9]{20}';
+let remote = null; // { role: 'desktop' | 'phone', id, peer, conn, house, seen | outbox }
+const newRemoteId = () => 'hm-' + Array.from(crypto.getRandomValues(new Uint8Array(20)), b => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('');
+function remoteUrl(id){ const u = new URL(location.href); u.search = ''; u.hash = REMOTE_KEY + '=' + id; return u.href; }
+function qrSVG(text){
+  const q = qrcode(0, 'M'); q.addData(text); q.make();
+  const n = q.getModuleCount(), m = 4; let d = '';
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (q.isDark(y, x)) d += `M${x + m} ${y + m}h1v1h-1z`;
+  return `<svg viewBox="0 0 ${n + 2 * m} ${n + 2 * m}" shape-rendering="crispEdges" aria-hidden="true">`
+    + `<rect width="100%" height="100%" style="fill:var(--sheet)"/><path d="${d}" style="fill:var(--ink)"/></svg>`;
+}
+const peerError = e => e && e.type === 'peer-unavailable' ? 'L’ordinateur n’est plus joignable : réaffichez le QR code sur l’ordinateur et scannez-le à nouveau.'
+  : e && e.type === 'browser-incompatible' ? 'Ce navigateur ne gère pas WebRTC.'
+  : 'Connexion impossible : vérifiez la connexion internet des deux appareils.';
+const connected = r => !!(r && r.conn && r.conn.open);
+function stopRemote(){
+  const r = remote; remote = null;
+  if (r && r.peer) r.peer.destroy();
+}
+function setRemoteStatus(r, msg, warn){ if (remote !== r) return; r.msg = msg; r.warn = !!warn; renderRemotePanel(); }
+function renderRemotePanel(){
+  const r = remote, p = $('#remotePanel');
+  const desk = !!r && r.role === 'desktop' && r.house === house, phone = !!house && !!house.remote;
+  p.classList.toggle('hidden', !desk && !phone);
+  if (!desk && !phone) return;
+  $('#remoteHint').textContent = desk
+    ? 'Scannez ce code avec un téléphone Android compatible ARCore, dans Chrome. Les pièces relevées sur le téléphone arrivent sur ce plan à la fin de chaque relevé.'
+    : 'Plan de l’ordinateur : lancez « Relevé RA », les pièces relevées sont envoyées à l’ordinateur à la fin du relevé.';
+  $('#remoteQr').classList.toggle('hidden', !desk || !r.qr);
+  if (desk && r.qr && $('#remoteQr')._qr !== r.qr){ $('#remoteQr').innerHTML = r.qr; $('#remoteQr')._qr = r.qr; }
+  $('#remoteCopy').classList.toggle('hidden', !desk || !r.qr);
+  $('#remoteStop').textContent = desk ? 'Arrêter' : 'Quitter';
+  const msg = phone && !r ? 'Déconnecté de l’ordinateur.' : r.msg || '';
+  $('#remoteStatus').textContent = msg;
+  $('#remoteStatus').classList.toggle('warn', phone && !r || !!(r && r.warn));
+}
+function onPeer(r){
+  r.peer.on('disconnected', () => { if (remote === r && !r.peer.destroyed) r.peer.reconnect(); });
+  r.peer.on('error', e => { console.error('PeerJS', e); setRemoteStatus(r, peerError(e), true); });
+}
+
+/* Ordinateur : affiche le QR code et reçoit les pièces */
+async function startRemote(){
+  if (remote && remote.role === 'desktop' && remote.house === house){ renderRemotePanel(); return; }
+  stopRemote();
+  const r = remote = { role: 'desktop', id: newRemoteId(), house, seen: new Set() };
+  setRemoteStatus(r, 'Préparation du QR code…');
+  try { await Promise.all([loadScript(PEER_LIB), loadScript(QR_LIB)]); }
+  catch (e){ console.error(e); setRemoteStatus(r, 'Chargement impossible : vérifiez la connexion internet.', true); return; }
+  if (remote !== r) return;
+  r.qr = qrSVG(remoteUrl(r.id));
+  setRemoteStatus(r, 'Connexion au service de mise en relation…');
+  r.peer = new Peer(r.id);
+  onPeer(r);
+  r.peer.on('open', () => { if (!connected(r)) setRemoteStatus(r, 'En attente du téléphone.'); });
+  r.peer.on('connection', c => acceptPhone(r, c));
+}
+function acceptPhone(r, c){
+  if (remote !== r){ c.close(); return; }
+  const prev = r.conn; r.conn = c; // le dernier téléphone qui scanne prend la main
+  if (prev) prev.close();
+  c.on('open', () => { if (r.conn !== c) return; sendHouse(r); setRemoteStatus(r, 'Téléphone connecté. Lancez « Relevé RA » sur le téléphone.'); });
+  c.on('data', d => { if (r.conn === c) receiveRooms(r, d); });
+  c.on('close', () => { if (r.conn === c){ r.conn = null; setRemoteStatus(r, 'Téléphone déconnecté. Scannez à nouveau le code pour continuer.', true); } });
+}
+const sendHouse = r => r.conn.send({ t: 'house', v: REMOTE_V, h: packHouse(r.house), l: curLevel(r.house).order });
+// Les pièces voyagent au format du partage par lien : un niveau par décalage d'étage du relevé
+function packSession(list){
+  const dls = [...new Set(list.map(x => x.dl || 0))];
+  return packHouse({ name: '', levels: dls.map(dl => ({ id: 'l' + dl, name: '', order: dl })),
+    rooms: list.map(x => ({ name: x.name, pts: x.pts, height: 2.5, sid: 's', levelId: 'l' + (x.dl || 0), items: x.items || [] })) });
+}
+function unpackSession(d){
+  if (typeof d.k !== 'string' || d.k.length > 40 || !Number.isInteger(d.l) || d.l < -20 || d.l > 50) throw new Error('format inconnu');
+  const s = unpackHouse(d.h), order = new Map(s.levels.map(l => [l.id, l.order]));
+  return { base: d.l, rooms: s.rooms.map(r => ({ name: r.name, pts: r.pts, dl: order.get(r.levelId), items: r.items })) };
+}
+function receiveRooms(r, d){
+  if (!d || d.t !== 'rooms' || d.v !== REMOTE_V) return;
+  let got;
+  try { got = unpackSession(d); }
+  catch (e){ console.error('Relevé reçu illisible', e); toast('Relevé reçu du téléphone illisible'); return; }
+  if (!r.seen.has(d.k) && got.rooms.length){ // un envoi répété après une coupure n'est ajouté qu'une fois
+    r.seen.add(d.k);
+    const separate = addSessionRooms(r.house, got.rooms, got.base);
+    if (house === r.house && visible('#house')) renderHouse();
+    toast(addedMessage(got.rooms, separate));
+  }
+  sendHouse(r); // accusé de réception : le téléphone affiche le plan à jour
+}
+
+/* Téléphone : ouvert par le QR code, envoie les pièces à la fin du relevé */
+function openRemoteLink(){
+  const m = location.hash.match(new RegExp('^#' + REMOTE_KEY + '=(' + REMOTE_ID + ')$'));
+  if (!m) return false;
+  if (!remote || remote.role !== 'phone' || remote.id !== m[1]) joinRemote(m[1]);
+  return true;
+}
+async function joinRemote(id){
+  stopRemote();
+  const r = remote = { role: 'phone', id, outbox: null };
+  toast('Connexion à l’ordinateur…');
+  try { await loadScript(PEER_LIB); }
+  catch (e){ console.error(e); toast('Chargement impossible : vérifiez la connexion internet'); return; }
+  if (remote !== r) return;
+  r.peer = new Peer();
+  onPeer(r);
+  r.peer.on('error', e => { if (remote === r && !r.house) toast(peerError(e)); });
+  r.peer.on('open', () => phoneConnect(r));
+}
+function phoneConnect(r){
+  if (remote !== r || !r.peer || r.peer.disconnected || connected(r)) return;
+  const c = r.conn = r.peer.connect(r.id, { reliable: true });
+  c.on('open', () => { if (r.conn !== c) return; setRemoteStatus(r, 'Connecté à l’ordinateur.'); if (r.outbox) c.send(r.outbox); });
+  c.on('data', d => { if (r.conn === c) receiveHouse(r, d); });
+  c.on('close', () => { if (r.conn === c){ r.conn = null; setRemoteStatus(r, 'Connexion à l’ordinateur perdue.', true); } });
+}
+function receiveHouse(r, d){
+  if (!d || d.t !== 'house' || d.v !== REMOTE_V) return;
+  let h;
+  try { h = unpackHouse(d.h); }
+  catch (e){ console.error('Plan reçu illisible', e); toast('Plan reçu de l’ordinateur illisible'); return; }
+  const lvl = h.levels.find(l => l.order === d.l);
+  r.house = { ...h, id: 'remote', remote: true, curLevel: lvl ? lvl.id : null };
+  if (r.outbox){
+    r.outbox = null;
+    try { localStorage.removeItem(DRAFT); } catch(e){}
+    toast('Pièces envoyées à l’ordinateur');
+  }
+  if (!session) openHouse(r.house); // pendant un relevé, le plan à jour s'affiche à la fin
+}
+// Fin d'un relevé sur le téléphone : les pièces partent vers l'ordinateur, le brouillon reste jusqu'à l'accusé de réception
+function sendSession(list){
+  const r = remote;
+  if (!r || r.role !== 'phone'){ toast('Ordinateur déconnecté : le relevé est conservé sur ce téléphone'); return; }
+  r.outbox = { t: 'rooms', v: REMOTE_V, k: uid('k'), l: curLevel(house).order, h: packSession(list) };
+  if (connected(r)) r.conn.send(r.outbox); else phoneConnect(r);
+  toast('Envoi à l’ordinateur…');
+}
+
+$('#remoteCopy').addEventListener('click', async () => {
+  if (!remote || remote.role !== 'desktop') return;
+  const url = remoteUrl(remote.id);
+  try { await navigator.clipboard.writeText(url); toast('Lien copié dans le presse-papiers'); }
+  catch (e){ prompt('Copiez ce lien :', url); }
+});
+$('#remoteStop').addEventListener('click', () => {
+  const phone = !!house && !!house.remote;
+  stopRemote();
+  if (!phone){ renderRemotePanel(); return; }
+  clearShareHash(); house = null; renderHome(); show('#home');
+});
+
 /* ---------- Navigation ---------- */
 // Les murs d'un plan se tracent une fois à l'ouverture (n pièces décalées de --t-stagger)
 const EXIT_MS = 160, LINE_MS = 480, STAGGER_MS = 70;
@@ -2394,7 +2563,7 @@ function renderNav(){
     if (k === m) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     b.disabled = k !== 'home' && !house;
   });
-  $('#nav [data-nav="scan"]').classList.toggle('off', !house || house.demo || !arSupported);
+  $('#nav [data-nav="scan"]').classList.toggle('off', !house || house.demo || (!arSupported && !!house.remote));
 }
 function goPlan(){
   houseEditing = false; arranging = false; selIdx = null; aView = null; editing = false;
@@ -2407,9 +2576,10 @@ function goEditor(){
 }
 function goScan(){
   if (house.demo){ toast(house.shared ? 'Importez ce logement pour y relever des pièces' : 'Le logement d’exemple ne peut pas être relevé : créez un logement'); return; }
-  if (!arSupported){ toast(arMessage || 'Réalité augmentée indisponible sur cet appareil'); return; }
   if (!visible('#house')) goPlan();
-  startAR();
+  if (arSupported) startAR();
+  else if (house.remote) toast(arMessage || 'Réalité augmentée indisponible sur cet appareil');
+  else startRemote(); // sans RA (ordinateur) : QR code pour relever avec un téléphone
 }
 $('#nav').addEventListener('click', e => {
   const b = e.target.closest('[data-nav]'); if (!b || b.disabled) return;
@@ -2433,7 +2603,7 @@ function renderHome(){
 }
 $('#houseList').addEventListener('click', e => {
   const o = e.target.closest('[data-h]'), d = e.target.closest('[data-delh]');
-  if (d){ if (!confirm('Supprimer ce logement et toutes ses pièces ?')) return; houses = houses.filter(h => h.id !== d.dataset.delh); if (house && house.id === d.dataset.delh) house = null; persist(); renderHome(); renderNav(); return; }
+  if (d){ if (!confirm('Supprimer ce logement et toutes ses pièces ?')) return; houses = houses.filter(h => h.id !== d.dataset.delh); if (house && house.id === d.dataset.delh){ house = null; stopRemote(); } persist(); renderHome(); renderNav(); return; }
   if (o){ const h = houses.find(h => h.id === o.dataset.h); if (h) openHouse(h); }
 });
 $('#newHouseBtn').addEventListener('click', () => {
@@ -2478,7 +2648,7 @@ function renderDraft(){
 
 /* Logement */
 let arranging = false, selIdx = null, aView = null, drag = null, houseEditing = false;
-function openHouse(h){ $('#housePlan')._zoom = null; armed = null; budgetOpen = null; house = ensureLevels(h); arranging = false; houseEditing = false; selIdx = null; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); drawIn($('#housePlan'), levelRooms(house).length); }
+function openHouse(h){ if (remote && remote.role === 'desktop' && remote.house !== h) stopRemote(); $('#housePlan')._zoom = null; armed = null; budgetOpen = null; house = ensureLevels(h); arranging = false; houseEditing = false; selIdx = null; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); drawIn($('#housePlan'), levelRooms(house).length); }
 function renderHouse(){
   const h = ensureLevels(house), all = h.rooms, lvl = curLevel(h);
   const rooms = levelRooms(h);
@@ -2542,13 +2712,15 @@ function renderHouse(){
   $('#sharedPanel').classList.toggle('hidden', !h.shared);
   $('#shareBtn').classList.toggle('hidden', !all.length);
   $('#pdfBtn').classList.toggle('hidden', !all.length);
-  $('#houseStatus').textContent = h.shared ? 'Les modifications faites ici sont conservées si vous importez le logement.'
+  renderRemotePanel();
+  $('#houseStatus').textContent = h.remote ? (arSupported ? '' : arMessage)
+    : h.shared ? 'Les modifications faites ici sont conservées si vous importez le logement.'
     : h.demo ? 'Logement d’exemple : changez de niveau, ouvrez une pièce ou essayez les outils de l’Éditeur.'
     : arSupported ? `« Relevé RA » relève le niveau affiché (${lvl.name.toLowerCase()}). Si vous changez d’étage pendant le relevé, les pièces sont rangées au bon niveau automatiquement.`
-    : arMessage + ' Vous pouvez dessiner les pièces dans l’Éditeur.';
+    : arMessage + ' Touchez « Relevé RA » pour relever avec un téléphone en scannant un QR code, ou dessinez les pièces dans l’Éditeur.';
   $('#houseStatus').classList.toggle('warn', !h.demo && !arSupported);
-  $('#delHouse').classList.toggle('hidden', !!h.demo);
-  $('#delLevel').classList.toggle('hidden', !!h.demo || h.levels.length < 2);
+  $('#delHouse').classList.toggle('hidden', !!h.demo || !!h.remote);
+  $('#delLevel').classList.toggle('hidden', !!h.demo || !!h.remote || h.levels.length < 2);
   renderNav();
 }
 $('#levelTabs').addEventListener('click', e => {
@@ -3976,14 +4148,22 @@ function onEnd(){
   cur = { pts: [] }; done = []; lastPlaced = null; realign = false; naming = false;
   sessionItems = []; pendingOpen = null; mode = 'corners';
   $('#overlay').classList.add('hidden');
-  if (list.length && house){
+  if (house && house.remote){
+    if (remote && remote.house && remote.house !== house) house = remote.house; // plan reçu pendant le relevé
+    if (list.length) sendSession(list);
+    renderHouse(); show('#house');
+  } else if (list.length && house){
     const separate = addSessionRooms(house, list);
     try { localStorage.removeItem(DRAFT); } catch(e){}
     renderHouse(); show('#house');
-    const nl = new Set(list.map(r => r.dl || 0)).size;
-    toast(separate ? 'Nouvelles pièces ajoutées à droite du plan. Placez-les dans l’Éditeur, avec « Ajuster la disposition »'
-                   : `${list.length} pièce${list.length>1?'s':''} ajoutée${list.length>1?'s':''}` + (nl > 1 ? ` sur ${nl} niveaux` : ' au plan'));
+    toast(addedMessage(list, separate));
   } else { renderHouse(); show('#house'); }
+}
+
+function addedMessage(list, separate){
+  const nl = new Set(list.map(r => r.dl || 0)).size;
+  return separate ? 'Nouvelles pièces ajoutées à droite du plan. Placez-les dans l’Éditeur, avec « Ajuster la disposition »'
+    : `${list.length} pièce${list.length>1?'s':''} ajoutée${list.length>1?'s':''}` + (nl > 1 ? ` sur ${nl} niveaux` : ' au plan');
 }
 
 async function startAR(){
@@ -4053,8 +4233,9 @@ $('#heroPlan').innerHTML = houseSVG(SAMPLE_ROOMS, hv, {});
 drawIn($('#heroPlan'), SAMPLE_ROOMS.length);
 renderHome();
 renderNav();
-openSharedLink();
-window.addEventListener('hashchange', openSharedLink);
+const openLink = () => { if (!openRemoteLink()) openSharedLink(); };
+openLink();
+window.addEventListener('hashchange', openLink);
 checkSupport();
 })();
 </script>

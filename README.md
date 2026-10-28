@@ -19,6 +19,7 @@ Map your home in augmented reality, right from your phone's browser: point at th
 - **Manual plan editor** (zoom with wheel, pinch or buttons; full-height plan with a side panel on wide screens): drag corners (they snap square to their neighbours), add or remove corners, type exact wall lengths, move doors, windows and devices on the plan, with undo. Rooms can also be drawn by hand, without AR.
 - **2D / 3D view**: switch the house plan to 3D to see the walls at their real ceiling height, with doors and windows cut through. Orbit, pan and zoom with the mouse or your fingers, show one level or the whole house stacked, and tap a room to open it.
 - **PDF export**: one A4 sheet per floor at a standard scale (1:50, 1:75, 1:100…), with dimensions, title block, room area table and electrical legend.
+- **Survey from a computer**: on a device without AR, « Relevé RA » shows a QR code. Scan it with an ARCore phone, survey the rooms, and they land on the computer's plan at the end of each survey. The two browsers are paired through the public [PeerJS](https://peerjs.com/) broker, then the rooms travel directly between them over WebRTC.
 - **Share by link**: the whole house is compressed into the link itself (after the `#`, never sent to a server); the recipient previews it and can import it.
 - **Robust tracking**: world anchors, tracking-loss detection, smoothed target, and manual realignment after a tracking jump.
 - **Local storage**: everything is saved automatically in the browser, and an interrupted survey can be recovered.
@@ -27,7 +28,7 @@ Map your home in augmented reality, right from your phone's browser: point at th
 
 AR uses [WebXR](https://immersiveweb.dev/) (`immersive-ar` + `hit-test`), so it needs an **Android phone compatible with ARCore** running **Chrome**, on an HTTPS page (GitHub Pages provides it).
 
-Safari on iPhone does not support WebXR yet. On any other device you can still browse and edit plans, draw rooms by hand, and try the built-in example house.
+Safari on iPhone does not support WebXR yet. On a computer, use « Relevé RA » to pair an Android phone by QR code. On any other device you can still browse and edit plans, draw rooms by hand, and try the built-in example house.
 
 ## Tips for a good survey
 
@@ -42,4 +43,4 @@ Plans are stored only in the browser (`localStorage`) of the device where they w
 
 ## Tech
 
-A single self-contained `index.html`: vanilla JavaScript, [three.js](https://threejs.org/) r128 for the AR overlay and the 3D view, SVG for the plans. No build step, no server.
+A single self-contained `index.html`: vanilla JavaScript, [three.js](https://threejs.org/) r128 for the AR overlay and the 3D view, SVG for the plans, PeerJS and qrcode-generator (loaded on demand) for phone pairing. No build step, no server.
