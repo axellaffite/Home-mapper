@@ -2403,7 +2403,7 @@ $('#pdfBtn').addEventListener('click', async () => {
 // quand les réseaux empêchent la liaison directe (4G, routeur sans bouclage, Wi-Fi isolant les appareils)
 const PEER_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js';
 const QR_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
-const TURN_URL = ''; // Worker turn/worker.js : identifiants TURN temporaires
+const TURN_URL = 'https://home-mapper-turn.elzozor.workers.dev'; // Worker turn/worker.js : identifiants TURN temporaires
 const STUN = [{ urls: 'stun:stun.cloudflare.com:3478' }, { urls: 'stun:stun.l.google.com:19302' }];
 const REMOTE_V = 1, REMOTE_KEY = 'r', REMOTE_ID = 'hm-[a-z0-9]{20}', LINK_TIMEOUT = 20000;
 let remote = null; // { role: 'desktop' | 'phone', id, peer, conn, house, seen | outbox }
