@@ -23,7 +23,7 @@
   --stack:3px 3px 0 -1px var(--sheet),3px 3px 0 0 var(--hair); --stack-ink:3px 3px 0 0 var(--ink);
   --t-press:120ms; --t-base:200ms; --t-sheet:260ms; --t-exit:160ms; --t-line:480ms; --t-stagger:70ms;
   --e-draw:cubic-bezier(.2,.7,.2,1); --e-exit:cubic-bezier(.4,0,1,1);
-  --nav-h:72px; --nav-w:96px;
+  --nav-h:72px; --nav-w:96px; --top-h:56px;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
@@ -56,6 +56,36 @@ h1 small{display:block;font:500 20px/1.25 var(--f-letter);color:var(--ink-soft);
 .btn-danger{background:transparent;color:var(--pencil);border:0;padding:10px 0;min-height:44px;font:600 13px var(--f-letter);letter-spacing:.08em;text-transform:uppercase;text-underline-offset:4px}
 .mini{border:1px solid var(--ink-soft);background:var(--sheet);color:var(--ink);border-radius:var(--r1);padding:0 var(--s3);min-height:40px;font:600 13px var(--f-letter);letter-spacing:.06em}
 .mini.danger{color:var(--pencil)}
+/* Barre du haut : la marque, puis le logement ouvert */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:25;display:flex;align-items:center;gap:var(--s4);height:var(--top-h);padding:0 20px;background:var(--sheet);border-bottom:1px solid var(--hair)}
+.topbar .brand{flex:none;font:600 var(--fs-label)/1 var(--f-letter);letter-spacing:.12em;text-transform:uppercase;color:var(--ink)}
+.switch{min-width:0;padding-left:var(--s3);border-left:1px solid var(--hair)}
+.switch-btn{display:flex;align-items:center;gap:var(--s2);max-width:100%;min-height:44px;padding:0 var(--s2);background:none;border:0;border-radius:var(--r1);color:var(--ink);font:600 var(--fs-fig) var(--f-letter)}
+.switch-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.switch-btn svg{flex:none;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.6;transition:transform var(--t-press) var(--e-draw)}
+.switch-btn[aria-expanded="true"]{background:var(--pencil-wash)}
+.switch-btn[aria-expanded="true"] svg{transform:rotate(180deg)}
+@media (hover:hover){.switch-btn:hover{box-shadow:inset 0 -2px 0 currentColor}}
+.ctx.switch-menu{width:min(320px,calc(100vw - 16px));max-height:min(70vh,480px);overflow-y:auto}
+.switch-menu .hm{display:grid;grid-template-columns:minmax(0,1fr) 16px;column-gap:var(--s3);align-items:center}
+.switch-menu .hm b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.switch-menu .hm small{grid-column:1;color:var(--ink-soft);font:400 var(--fs-note)/1.3 var(--f-text)}
+.switch-menu .hm svg{grid-column:2;grid-row:1 / 3;width:16px;height:16px;fill:none;stroke:var(--pencil);stroke-width:2;visibility:hidden}
+.switch-menu .hm[aria-checked="true"] svg{visibility:visible}
+.switch-menu hr{border:0;border-top:1px solid var(--hair);margin:var(--s1) 0}
+.switch-menu .act{font:600 13px var(--f-letter);letter-spacing:.06em;text-transform:uppercase}
+body{padding-top:var(--top-h)}
+body.linked .topbar,body:has(#overlay:not(.hidden)) .topbar{display:none}
+body.linked{padding-top:0}
+/* Choix du logement */
+.picker{width:min(560px,calc(100vw - 32px));max-height:calc(100dvh - 48px);overflow-y:auto;padding:var(--s5);border:1px solid var(--ink);border-radius:var(--r0);background:var(--sheet);color:var(--ink);box-shadow:var(--stack-ink)}
+.picker[open]{animation:panel-in var(--t-sheet) var(--e-draw) both}
+.picker::backdrop{background:rgba(35,40,43,.4)}
+.picker h2{margin-top:var(--s2)}
+.picker .lede{margin-bottom:var(--s3)}
+.howto{margin-top:var(--s5);border-top:1px solid var(--hair)}
+.howto summary{padding:var(--s3) 0;min-height:44px;font:600 14px var(--f-letter);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.howto .steps{margin-top:0}
 .back{background:none;border:0;color:var(--ink-soft);padding:6px 0;min-height:44px;font:500 var(--fs-label) var(--f-letter);letter-spacing:.12em;text-transform:uppercase;text-underline-offset:4px}
 .back::before{content:"← "}
 @media (hover:hover){
@@ -107,7 +137,7 @@ h3{font-size:16px;font-weight:600;letter-spacing:.02em}
 .arrange{margin-top:var(--s3);padding:var(--s3) var(--s4) var(--s4);background:var(--sheet);border:1px solid var(--ink);border-radius:var(--r0);box-shadow:var(--stack);animation:panel-in var(--t-base) var(--e-draw) both}
 .arrange p{margin:0 0 var(--s2);font-size:15px;color:var(--ink-soft)}
 /* Relevé pour l'ordinateur (téléphone) : écran à part, sans navigation */
-body.linked{padding-bottom:0;padding-right:0}
+body.linked{padding-bottom:0;padding-left:0}
 body.linked .nav{display:none}
 .linkhead{border:1px solid var(--ink);border-top:3px solid var(--pencil);background:var(--sheet);box-shadow:var(--stack);padding:var(--s3) var(--s4) var(--s4);margin:0 0 var(--s4)}
 .linkhead .lab{display:block}
@@ -172,6 +202,11 @@ a.btn{text-decoration:none}
 .sheet .bsel-w{stroke:var(--pencil);stroke-width:5;stroke-linecap:square}
 .sheet .bsel-f{fill:var(--pencil-wash);stroke:var(--pencil);stroke-width:1;stroke-dasharray:4 3}
 .sheet .bsel-p{fill:none;stroke:var(--pencil);stroke-width:2.5;stroke-dasharray:7 4}
+/* Travaux : surface survolée sur les plans */
+.sheet .hov-w{stroke:var(--pencil);stroke-width:8;stroke-linecap:square;stroke-opacity:.45}
+.sheet .hov-f{fill:var(--pencil-wash);stroke:var(--pencil);stroke-width:1.5}
+.sheet .hov-p{fill:none;stroke:var(--pencil);stroke-width:4;stroke-opacity:.45}
+.sheet.hovering svg{cursor:pointer}
 .sheet.picking svg{cursor:crosshair}
 .fin-actions select{font:500 15px var(--f-text);padding:0 var(--s2);min-height:40px;border:1px solid var(--ink-soft);border-radius:var(--r1);background:var(--sheet);color:var(--ink)}
 .walls{list-style:none;padding:0;margin:var(--s2) 0 0;columns:2;column-gap:var(--s5);font-size:15px}
@@ -189,9 +224,12 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 .nav button.off{color:var(--ink-soft)}
 .nav button:disabled{color:var(--construct);opacity:.7;cursor:not-allowed}
 #overlay:not(.hidden) ~ .nav{display:none}
+@media (max-width:420px){.nav{gap:0;padding-left:var(--s1);padding-right:var(--s1)}.nav button{letter-spacing:.04em;font-size:10px}}
+/* Onglet Travaux : mêmes écrans que Plan, seul le contenu du panneau change */
+.screen.works [data-plan],.screen:not(.works) [data-works]{display:none}
 @media (min-width:900px){
-  body{padding-bottom:0;padding-right:var(--nav-w)}
-  .nav{left:auto;top:0;width:var(--nav-w);flex-direction:column;justify-content:flex-start;gap:var(--s2);border-top:0;border-left:1px solid var(--hair);padding:calc(24px + env(safe-area-inset-top,0px)) var(--s2) 24px}
+  body{padding-bottom:0;padding-left:var(--nav-w)}
+  .nav{right:auto;top:var(--top-h);width:var(--nav-w);flex-direction:column;justify-content:flex-start;gap:var(--s2);border-top:0;border-right:1px solid var(--hair);padding:24px var(--s2)}
   .nav button{flex:none;min-height:72px}
   .nav button::before{left:-9px;right:auto;top:22%;bottom:22%;width:2px;height:auto;transform:scaleY(0)}
 }
@@ -217,7 +255,7 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 .sheet.zoomed svg{cursor:grab}
 /* Grand écran : plan sur toute la hauteur, panneau latéral à droite */
 @media (min-width:1024px){
-  .wrap.screen{max-width:none;height:100vh;padding:18px 24px;display:grid;grid-template-columns:minmax(0,1fr) 380px;grid-template-rows:auto minmax(0,1fr);column-gap:var(--s5)}
+  .wrap.screen{max-width:none;height:calc(100vh - var(--top-h));padding:18px 24px;display:grid;grid-template-columns:minmax(0,1fr) 380px;grid-template-rows:auto minmax(0,1fr);column-gap:var(--s5)}
   .screen .head{grid-column:2;grid-row:1;min-width:0}
   .screen .stage{grid-column:1;grid-row:1 / 3;min-height:0;display:flex}
   .screen .stage .sheet{flex:1;position:relative;overflow:hidden}
@@ -304,7 +342,7 @@ body{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))}
 .armed b{color:var(--pencil);font:600 15px var(--f-letter)}
 @media (min-width:1024px){ .screen .stage .armed{position:absolute;left:10px;top:10px;right:60px;z-index:2;margin:0} }
 .num-in select,.brkedit select{font:500 15px var(--f-text);padding:0 var(--s2);min-height:40px;max-width:230px;border:1px solid var(--ink-soft);border-radius:var(--r1);background:var(--sheet);color:var(--ink)}
-@media (min-width:900px){ .toast{bottom:calc(24px + env(safe-area-inset-bottom,0px));margin-left:calc(var(--nav-w) / -2)} }
+@media (min-width:900px){ .toast{bottom:calc(24px + env(safe-area-inset-bottom,0px));margin-left:calc(var(--nav-w) / 2)} }
 
 /* Overlay RA : panneaux givrés sur l'image de la caméra uniquement */
 #overlay{position:fixed;inset:0;z-index:10;color:var(--ar-ink);font-family:var(--f-text);pointer-events:none}
@@ -422,25 +460,27 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
 </head>
 <body>
 
-<!-- ACCUEIL -->
-<main id="home" class="wrap">
+<!-- BARRE DU HAUT : le logement ouvert, et le changer -->
+<header class="topbar" id="topbar">
+  <span class="brand">Home mapper</span>
+  <div class="switch hidden" id="houseSwitch">
+    <button class="switch-btn" id="houseSwitchBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="houseMenu"><span id="houseSwitchName"></span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5l4 4 4-4"/></svg></button>
+    <div class="ctx switch-menu hidden" id="houseMenu" role="menu" aria-label="Logements"></div>
+  </div>
+</header>
+
+<!-- LOGEMENTS : au lancement, ou depuis la barre du haut -->
+<dialog class="picker" id="picker" aria-labelledby="pickerTitle">
   <span class="lab">Home mapper</span>
-  <h1>Relevé de logement<small>Pièce par pièce, le plan de toute la maison</small></h1>
-  <p class="lede">Filmez chaque pièce avec votre téléphone, visez le pied des coins et donnez un nom à la pièce. Enchaînez les pièces dans le même relevé : elles se placent automatiquement les unes par rapport aux autres.</p>
-  <div class="sheet" id="heroPlan"></div>
-  <div class="row" style="margin-top:18px">
-    <button class="btn btn-main" id="newHouseBtn">Nouveau logement</button>
-  </div>
-  <p class="status" id="status">Vérification de la réalité augmentée…</p>
-  <div class="row">
-    <button class="btn btn-ghost" id="demoBtn">Voir un logement d’exemple</button>
-  </div>
-  <div class="row"><button class="btn btn-ghost hidden" id="draftBtn"></button></div>
-
-  <h2>Mes logements</h2>
+  <h2 id="pickerTitle"></h2>
+  <p class="lede" id="pickerLede"></p>
   <ul class="list" id="houseList"></ul>
-
-  <h2>Bien relever</h2>
+  <div class="row"><button class="btn btn-ghost hidden" id="draftBtn"></button></div>
+  <div class="row"><button class="btn btn-main" id="newHouseBtn">Nouveau logement</button></div>
+  <div class="row"><button class="btn btn-ghost" id="demoBtn">Voir un logement d’exemple</button></div>
+  <p class="status" id="status">Vérification de la réalité augmentée…</p>
+  <details class="howto">
+  <summary>Bien relever</summary>
   <ol class="steps">
     <li><span>Allumez bien les pièces, puis balayez lentement le sol pendant 5 à 10 secondes, jusqu’à voir apparaître la cible.</span></li>
     <li><span>Placez la cible au pied de chaque coin, dans l’ordre, et touchez l’écran. Les meubles peuvent gêner : visez juste devant.</span></li>
@@ -449,12 +489,13 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
     <li><span>Une fois une pièce nommée, passez en mode « Ouvertures » pour pointer les deux côtés de chaque porte et fenêtre, ou « Électricité » pour viser prises, interrupteurs et luminaires.</span></li>
     <li><span>Pour changer d’étage, montez ou descendez l’escalier lentement en filmant les marches. L’étage est détecté tout seul et les niveaux restent alignés entre eux.</span></li>
   </ol>
-</main>
+  </details>
+  <div class="row" style="justify-content:flex-end"><button class="mini" id="pickerClose">Fermer</button></div>
+</dialog>
 
 <!-- LOGEMENT -->
 <main id="house" class="wrap screen hidden">
  <div class="head">
-  <button class="back" id="houseBack">Mes logements</button>
   <span class="lab" aria-hidden="true">Logement</span>
   <input class="name" id="houseName" aria-label="Nom du logement">
   <div class="arrange hidden" id="sharedPanel" style="margin:0 0 14px">
@@ -471,7 +512,7 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
     </div>
   </div>
   <div class="levels" id="levelTabs" role="tablist" aria-label="Niveaux"></div>
-  <div class="levelbar">
+  <div class="levelbar" data-plan>
     <input id="levelName" aria-label="Nom du niveau">
     <button class="mini" id="addUpBtn">Ajouter un étage</button>
     <button class="mini" id="addDownBtn">Ajouter un sous-sol</button>
@@ -490,10 +531,10 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
  <div class="sidebar">
   <div class="toolbar" id="houseTools">
     <label class="chk" data-2d><input type="checkbox" id="dimsChk"> Cotes</label>
-    <label class="chk" data-2d><input type="checkbox" id="elecChk" checked> Électricité</label>
+    <label class="chk" data-2d data-plan><input type="checkbox" id="elecChk" checked> Électricité</label>
     <label class="chk hidden" id="allLvl"><input type="checkbox" id="allChk"> Tous les niveaux</label>
   </div>
-  <div class="legend" id="legend"></div>
+  <div class="legend" id="legend" data-plan></div>
   <div class="arrange hidden" id="houseEditPanel">
     <p>Touchez une pièce du plan ou de la liste pour modifier ses murs, ses cotes, ses ouvertures et son électricité.</p>
     <div class="row" style="margin-top:0">
@@ -513,26 +554,27 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
     <label class="chk"><input type="checkbox" id="groupChk" checked> Déplacer avec les pièces du même relevé (tous niveaux)</label>
     <button class="btn btn-main" id="arrangeDone">Terminer l’ajustement</button>
   </div>
-  <div class="stats" id="houseStats"></div>
-  <p class="status" id="houseStatus"></p>
-  <div class="row">
+  <div class="stats" id="houseStats" data-plan></div>
+  <p class="status" id="houseStatus" data-plan></p>
+  <div class="row" data-plan>
     <button class="btn btn-ghost" id="pdfBtn">Exporter en PDF</button>
     <button class="btn btn-ghost" id="shareBtn">Partager par lien</button>
   </div>
-  <section id="circuitPanel">
+  <section id="circuitPanel" data-plan>
     <h2>Tableau électrique</h2>
     <p class="status" id="meterStatus" style="margin-top:0"></p>
     <div class="row"><button class="btn btn-ghost" id="openPanel">Ouvrir le tableau</button></div>
   </section>
   <h2>Pièces</h2>
+  <p class="status" style="margin-top:0" data-works>Touchez un mur ou un sol sur le plan, en 2D ou en 3D, ou une pièce de la liste, pour noter son matériau, sa référence et sa teinte. Avec un poste du budget ouvert, le plan ajoute ou retire ses surfaces.</p>
   <ul class="list" id="roomList"></ul>
-  <div class="hidden" id="shopBox">
+  <div class="hidden" id="shopBox" data-works>
     <h2>Finitions et achats</h2>
     <p class="status" style="margin-top:0">Les produits identiques de tout le logement sont regroupés, avec la quantité totale à prévoir.</p>
     <ul class="list shop" id="shopList"></ul>
     <div class="row"><button class="btn btn-ghost" id="shopCopy">Copier la liste d’achats</button></div>
   </div>
-  <div class="hidden" id="budgetBox">
+  <div class="hidden" id="budgetBox" data-works>
     <h2>Budget travaux</h2>
     <p class="status" style="margin-top:0">Ajoutez ce que vous voulez changer, choisissez les surfaces et entrez vos prix : quantités et coûts se calculent tout seuls.</p>
     <ul class="list budget" id="budgetList"></ul>
@@ -541,7 +583,7 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
     <div class="stats" id="budgetTotal"></div>
     <div class="row"><button class="btn btn-ghost" id="budgetCopy">Copier le budget</button></div>
   </div>
-  <div class="row" style="justify-content:space-between">
+  <div class="row" style="justify-content:space-between" data-plan>
     <button class="btn-danger" id="delLevel">Supprimer ce niveau</button>
     <button class="btn-danger" id="delHouse">Supprimer ce logement</button>
   </div>
@@ -563,7 +605,7 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
     </div>
  </div>
  <div class="sidebar">
-  <div class="toolbar">
+  <div class="toolbar" data-plan>
     <button class="btn btn-ghost" id="editBtn">Modifier le plan</button>
     <button class="mini" id="undoEdit" disabled>Annuler la dernière modification</button>
   </div>
@@ -572,28 +614,28 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
     <div class="rot"><button id="delCorner">Supprimer le coin</button></div>
     <button class="btn btn-main" id="editDone" style="margin-top:10px">Terminer les modifications</button>
   </div>
-  <div class="addbar">
+  <div class="addbar" data-plan>
     <select id="addType" aria-label="Élément à ajouter"></select>
     <button class="btn btn-ghost" id="placeBtn">Placer sur le plan</button>
   </div>
-  <p class="status" id="placeHint">Touchez un élément du plan pour le sélectionner.</p>
-  <h2>Portes, fenêtres et électricité</h2>
-  <ul class="list items" id="itemList"></ul>
+  <p class="status" id="placeHint" data-plan>Touchez un élément du plan pour le sélectionner.</p>
+  <h2 data-plan>Portes, fenêtres et électricité</h2>
+  <ul class="list items" id="itemList" data-plan></ul>
   <div class="stats" id="roomStats"></div>
-  <label class="height">Niveau <select id="roomLevel"></select></label>
+  <label class="height" data-plan>Niveau <select id="roomLevel"></select></label>
   <label class="height">Hauteur sous plafond
     <input type="number" id="heightIn" step="0.01" min="1" max="10" inputmode="decimal"> m
   </label>
-  <h2>Finitions</h2>
-  <p class="status" style="margin-top:0">Matériau, référence et teinte de chaque surface. Les surfaces déduisent portes et fenêtres, et les quantités à prévoir se calculent toutes seules.</p>
-  <ul class="list finishes" id="finishList"></ul>
-  <h2>Longueur des murs</h2>
-  <p class="status" style="margin-top:0">Changez une cote pour corriger un mur : il s’allonge depuis son premier coin, et le mur parallèle suivant compense.</p>
-  <ul class="walls" id="walls"></ul>
-  <div class="row" style="margin-top:22px">
+  <h2 data-works>Finitions</h2>
+  <p class="status" style="margin-top:0" data-works>Matériau, référence et teinte de chaque surface. Les surfaces déduisent portes et fenêtres, et les quantités à prévoir se calculent toutes seules.</p>
+  <ul class="list finishes" id="finishList" data-works></ul>
+  <h2 data-plan>Longueur des murs</h2>
+  <p class="status" style="margin-top:0" data-plan>Changez une cote pour corriger un mur : il s’allonge depuis son premier coin, et le mur parallèle suivant compense.</p>
+  <ul class="walls" id="walls" data-plan></ul>
+  <div class="row" style="margin-top:22px" data-plan>
     <button class="btn btn-ghost" id="copyBtn">Copier les mesures</button>
   </div>
-  <button class="btn-danger" id="delRoom">Supprimer cette pièce</button>
+  <button class="btn-danger" id="delRoom" data-plan>Supprimer cette pièce</button>
  </div>
 </main>
 
@@ -700,10 +742,10 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
 
 <!-- NAVIGATION : en bas sur mobile, à droite sur grand écran -->
 <nav class="nav" id="nav" aria-label="Modes">
-  <button data-nav="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Logements</button>
   <button data-nav="plan"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 12h8v9M11 3v5M15 12h6"/></svg>Plan</button>
   <button data-nav="edit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>Éditeur</button>
   <button data-nav="panel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18"/><path d="M4 12h16M8 6v3M12 6v3M16 6v3M8 15v3M12 15v3"/></svg>Tableau</button>
+  <button data-nav="works"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="15" height="6"/><path d="M18 6h3v6h-9v3M10 15h4v6h-4z"/></svg>Travaux</button>
   <button data-nav="scan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/><circle cx="12" cy="12" r="3"/></svg>Relevé RA</button>
 </nav>
 
@@ -1826,12 +1868,16 @@ function pierce(put, quadOf, from, to, holes, z0, H){
 }
 // Prisme vertical sur un quadrilatère du plan ; le plan (x, y) devient (x, z) dans la scène, y vers le haut.
 // La face q[0] → q[1] (le parement côté pièce pour un mur) prend la couleur `inner`, les autres la couleur de la feuille
-function prism(buf, q, z0, z1, inner){
+// Chaque triangle note sa surface (owner, « pièce|w n° ») et s'il est sur le parement côté pièce, pour viser et surligner
+function prism(buf, q, z0, z1, inner, owner = null){
   if (z1 - z0 < 0.005) return;
   const b = q.map(p => [p[0], z0, p[1]]), t = q.map(p => [p[0], z1, p[1]]);
-  const face = (c, a, d, e, f) => { buf.pos.push(...a, ...d, ...e, ...a, ...e, ...f); for (let k = 0; k < 6; k++) buf.col.push(c.r, c.g, c.b); };
-  face(v3.base, b[0], b[3], b[2], b[1]); face(v3.base, t[0], t[1], t[2], t[3]);
-  for (let i = 0; i < 4; i++){ const j = (i + 1) % 4; face(i === 0 && inner || v3.base, b[i], b[j], t[j], t[i]); }
+  const face = (c, side, a, d, e, f) => {
+    buf.pos.push(...a, ...d, ...e, ...a, ...e, ...f); for (let k = 0; k < 6; k++) buf.col.push(c.r, c.g, c.b);
+    buf.own.push(owner, owner); buf.side.push(side, side);
+  };
+  face(v3.base, false, b[0], b[3], b[2], b[1]); face(v3.base, false, t[0], t[1], t[2], t[3]);
+  for (let i = 0; i < 4; i++){ const j = (i + 1) % 4; face(i === 0 && inner || v3.base, i === 0, b[i], b[j], t[j], t[i]); }
 }
 // Couleur notée pour le parement d'un mur : celle du mur s'il est différent, sinon celle des murs de la pièce
 function wallColor(r, i){
@@ -1841,7 +1887,7 @@ function wallColor(r, i){
 function roomWalls(r, holes, put, z0){
   const p = r.pts, H = r.height || V3.height;
   p.forEach((_, i) => {
-    const c = wallColor(r, i), putC = (q, a, b) => put(q, a, b, c);
+    const c = wallColor(r, i), putC = (q, a, b) => put(q, a, b, c, r.id + '|w' + i);
     const L = wallLen(p, i); if (L < 0.01) return;
     const n = inwardNormal(p, i), o = [-n[0] * V3.wall, -n[1] * V3.wall], e = V3.wall / L; // prolongé de l'épaisseur aux angles
     const quadOf = (t0, t1) => { const A = wallPoint(p, i, t0), B = wallPoint(p, i, t1); return [A, B, [B[0] + o[0], B[1] + o[1]], [A[0] + o[0], A[1] + o[1]]]; };
@@ -1890,6 +1936,8 @@ function v3Init(){
       face: new THREE.MeshLambertMaterial({ vertexColors: true, side, ...lift }),
       ghost: new THREE.MeshLambertMaterial({ vertexColors: true, side, transparent: true, opacity: 0.35, depthWrite: false }),
       ink: new THREE.LineBasicMaterial({ color: col('--ink') }),
+      sel: new THREE.MeshBasicMaterial({ color: col('--pencil'), side, transparent: true, opacity: 0.5, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+      hov: new THREE.MeshBasicMaterial({ color: col('--pencil'), side, transparent: true, opacity: 0.28, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }),
       faint: new THREE.LineBasicMaterial({ color: col('--construct') })
     } };
   v3Controls(canvas);
@@ -1900,12 +1948,12 @@ function v3Build(h){
   if (v3.root){ scene.remove(v3.root); v3.root.traverse(o => o.geometry && o.geometry.dispose()); }
   const rooms = h.rooms.filter(r => ids.includes(r.levelId) && r.pts.length >= 3), z = levelBases(h);
   const joints = ids.flatMap(id => detectJoints(h, id)).filter(j => !j.off), holes = wallHoles(h, rooms, joints);
-  const solid = { on: { pos: [], col: [] }, off: { pos: [], col: [] } }, root = new THREE.Group(), floors = [];
-  const putter = r => { const buf = r.levelId === cur ? solid.on : solid.off; return (q, z0, z1, c) => prism(buf, q, z0, z1, c); };
+  const solid = { on: { pos: [], col: [], own: [], side: [] }, off: { pos: [], col: [], own: [], side: [] } }, root = new THREE.Group(), floors = [];
+  const putter = r => { const buf = r.levelId === cur ? solid.on : solid.off; return (q, z0, z1, c, owner) => prism(buf, q, z0, z1, c, owner); };
   rooms.forEach(r => {
     roomWalls(r, holes, putter(r), z[r.levelId]);
     const f = floorMesh(r, z[r.levelId], floorMat(((r.finishes || {}).floor || {}).color, r.levelId !== cur));
-    f.userData.room = r; root.add(f);
+    f.userData.room = r; f.userData.key = r.id + '|f'; root.add(f);
     if (r.levelId === cur) floors.push(f);
   });
   joints.forEach(jt => jointBand(jt, putter(jt.A), z[jt.A.levelId]));
@@ -1919,7 +1967,7 @@ function v3Build(h){
     if (k === 'on') walls = m;
   });
   scene.add(root);
-  v3.root = root; v3.pick = walls ? floors.concat(walls) : floors;
+  v3.root = root; v3.pick = walls ? floors.concat(walls) : floors; v3.floors = floors; v3.walls = solid.on; v3.marks = null;
   v3.labels = rooms.filter(r => r.levelId === cur).map(r => {
     const [x, y] = labelPoint(r.pts), el = document.createElement('span');
     el.textContent = r.name;
@@ -1943,6 +1991,7 @@ function v3Show(plan, h){
   if (!v3.cam){ v3Fit(c, 0, V3.phi[0]); v3Lift(); }
   else if (v3.key !== key) v3Fit(c, v3.cam.th, v3.cam.ph);
   v3.key = key;
+  v3Mark();
   v3Draw();
   if (!v3.canvas.clientWidth) requestAnimationFrame(v3Draw); // écran pas encore affiché
 }
@@ -1992,12 +2041,54 @@ function v3Zoom(z){
   else v3Dolly(z === 'in' ? 1 / V3.step : V3.step);
   v3Draw();
 }
-// Un appui sans glisser sur le sol d'une pièce l'ouvre ; les murs du niveau masquent les sols derrière eux
-function v3Pick(x, y){
+// Objet visé au point d'écran (x, y) ; les murs du niveau masquent les sols derrière eux
+function v3Hit(x, y){
   const b = v3.canvas.getBoundingClientRect(), ray = new THREE.Raycaster();
   ray.setFromCamera(new THREE.Vector2((x - b.left) / b.width * 2 - 1, -(y - b.top) / b.height * 2 + 1), v3.camera);
-  const hit = ray.intersectObjects(v3.pick)[0];
+  return ray.intersectObjects(v3.pick)[0] || null;
+}
+// Surface visée : le sol d'une pièce, ou l'un de ses murs
+function v3SurfaceAt(x, y){
+  const hit = v3Hit(x, y); if (!hit) return null;
+  return hit.object.userData.key || v3.walls.own[hit.faceIndex] || null;
+}
+// Un appui sans glisser sur le sol d'une pièce l'ouvre ; en Travaux, il choisit le mur ou le sol visé
+function v3Pick(x, y){
+  if (works){ const k = v3SurfaceAt(x, y); if (k) worksPick(k); return; }
+  const hit = v3Hit(x, y);
   if (hit && hit.object.userData.room) enterRoom(hit.object.userData.room);
+}
+// Surfaces du poste de budget ouvert, et surface survolée, peintes au crayon par-dessus la maquette
+function v3Overlay(keys, mat){
+  const w = v3.walls, pos = [], g = new THREE.Group();
+  w.own.forEach((k, t) => { if (k && w.side[t] && surfaceMatch(keys, k)) for (let n = t * 9; n < t * 9 + 9; n++) pos.push(w.pos[n]); });
+  if (pos.length){
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.add(new THREE.Mesh(geo, mat));
+  }
+  v3.floors.forEach(f => { if (keys.has(f.userData.key)){ const m = new THREE.Mesh(f.geometry, mat); m.userData.shared = true; g.add(m); } });
+  return g;
+}
+function v3Mark(){
+  if (!v3 || !v3.root) return;
+  if (v3.marks){ v3.root.remove(v3.marks); v3.marks.traverse(o => o.geometry && !o.userData.shared && o.geometry.dispose()); v3.marks = null; }
+  if (!works) return;
+  const sel = budgetPicking() ? budgetSel() : null, hov = v3.hover ? new Set([shownSurface(v3.hover)]) : null;
+  v3.marks = new THREE.Group();
+  if (sel && sel.size) v3.marks.add(v3Overlay(sel, v3.mats.sel));
+  if (hov) v3.marks.add(v3Overlay(hov, v3.mats.hov));
+  v3.root.add(v3.marks);
+}
+let v3HoverReq = 0;
+function v3Hover(x, y){
+  cancelAnimationFrame(v3HoverReq);
+  v3HoverReq = requestAnimationFrame(() => {
+    if (!v3 || !v3.cam) return;
+    const k = x == null || !works ? null : v3SurfaceAt(x, y);
+    v3.canvas.style.cursor = k ? 'pointer' : '';
+    if (k === v3.hover) return;
+    v3.hover = k; v3Mark(); v3Draw();
+  });
 }
 /* Un doigt ou clic gauche : tourner ; deux doigts, clic droit ou Maj : déplacer ; pincement ou molette : zoomer */
 function v3Controls(canvas){
@@ -2012,6 +2103,7 @@ function v3Controls(canvas){
     try { canvas.setPointerCapture(e.pointerId); } catch (_){ }
     pts.set(e.pointerId, [e.clientX, e.clientY]);
     if (pts.size === 1){ from = [e.clientX, e.clientY]; moved = false; } else moved = true;
+    if (v3.hover){ v3.hover = null; canvas.style.cursor = ''; v3Mark(); }
     last = gesture();
   });
   canvas.addEventListener('pointermove', e => {
@@ -2033,6 +2125,9 @@ function v3Controls(canvas){
   };
   canvas.addEventListener('pointerup', up);
   canvas.addEventListener('pointercancel', up);
+  // Survol à la souris, hors geste : la surface visée en Travaux
+  canvas.addEventListener('pointermove', e => { if (pts.size || e.pointerType !== 'mouse') return; v3Hover(e.clientX, e.clientY); });
+  canvas.addEventListener('pointerleave', () => v3Hover(null));
   canvas.addEventListener('contextmenu', e => e.preventDefault());
   canvas.addEventListener('wheel', e => {
     if (!v3.cam || (!wideMQ.matches && !e.ctrlKey)) return; // page défilante : la molette seule fait défiler
@@ -2618,7 +2713,7 @@ $('#linkLevels').addEventListener('click', e => {
 $('#linkScan').addEventListener('click', () => { if (house && house.remote && arSupported) startAR(); });
 $('#linkQuit').addEventListener('click', () => {
   if (remote && remote.outbox && !confirm('Des pièces n’ont pas encore été reçues par l’ordinateur. Quitter quand même ? Elles restent récupérables sur ce téléphone.')) return;
-  stopRemote(); history.replaceState(null, '', location.pathname); house = null; renderHome(); show('#home');
+  stopRemote(); history.replaceState(null, '', location.pathname); house = null; document.body.classList.remove('linked'); openPicker();
 });
 
 $('#remoteCopy').addEventListener('click', async () => {
@@ -2639,8 +2734,9 @@ function drawIn(el, n){
   el.style.setProperty('--n', n); el.classList.add('drawing');
   clearTimeout(el._draw); el._draw = setTimeout(() => el.classList.remove('drawing'), n * STAGGER_MS + LINE_MS + 520);
 }
-const SCREENS = ['#home', '#house', '#room', '#panel', '#link'];
+const SCREENS = ['#house', '#room', '#panel', '#link'];
 function show(id){
+  if ($('#picker').open) $('#picker').close();
   const leaving = SCREENS.map(s => $(s)).find(el => el.id !== id.slice(1) && !el.classList.contains('hidden'));
   SCREENS.forEach(s => { const el = $(s); if (s === id){ clearTimeout(el._leave); el.classList.remove('leaving'); el.style.cssText = ''; } });
   if (leaving){
@@ -2657,10 +2753,10 @@ function show(id){
   if (wideMQ.matches) refreshPlans(); // le cadrage dépend de la taille réelle de la zone
 }
 const visible = id => !$(id).classList.contains('hidden');
-// Mode courant : la liste, le plan (logement ou pièce consultée) ou l'éditeur
+// Mode courant : la liste, le plan (logement ou pièce consultée), l'éditeur ou les travaux
 function navMode(){
-  if (visible('#house')) return houseEditing || arranging ? 'edit' : 'plan';
-  if (visible('#room')) return editing ? 'edit' : 'plan';
+  if (visible('#house')) return houseEditing || arranging ? 'edit' : works ? 'works' : 'plan';
+  if (visible('#room')) return editing ? 'edit' : works ? 'works' : 'plan';
   if (visible('#panel')) return 'panel';
   return 'home';
 }
@@ -2674,12 +2770,20 @@ function renderNav(){
   $('#nav [data-nav="scan"]').classList.toggle('off', !house || house.demo);
 }
 function goPlan(){
-  houseEditing = false; arranging = false; selIdx = null; aView = null; editing = false;
+  houseEditing = false; arranging = false; selIdx = null; aView = null; editing = false; works = false;
   renderHouse(); show('#house');
 }
 function goEditor(){
-  if (visible('#room')){ if (!editing) setEditing(true); return; }
+  works = false;
+  if (visible('#room')){ setEditing(true); return; }
   houseEditing = true; arranging = false; selIdx = null; aView = null;
+  renderHouse(); show('#house');
+}
+// Travaux : finitions, achats et budget, sur le logement ou la pièce ouverte
+function goWorks(){
+  works = true;
+  if (visible('#room')){ setPlacing(null); setEditing(false); return; }
+  houseEditing = false; arranging = false; selIdx = null; aView = null; editing = false;
   renderHouse(); show('#house');
 }
 function goScan(){
@@ -2691,26 +2795,38 @@ function goScan(){
 $('#nav').addEventListener('click', e => {
   const b = e.target.closest('[data-nav]'); if (!b || b.disabled) return;
   const k = b.dataset.nav;
-  if (k === 'home'){ renderHome(); show('#home'); }
-  else if (k === 'plan') goPlan();
+  if (k === 'plan') goPlan();
   else if (k === 'edit') goEditor();
   else if (k === 'panel') goPanel();
+  else if (k === 'works') goWorks();
   else if (k === 'scan') goScan();
 });
 
-/* Accueil */
-function renderHome(){
+/* Choix du logement : obligatoire tant qu'aucun logement n'est ouvert */
+function renderPicker(){
   const ul = $('#houseList');
-  ul.innerHTML = houses.length ? houses.map(h => `<li>
+  $('#pickerTitle').textContent = houses.length ? 'Mes logements' : 'Bienvenue';
+  $('#pickerLede').textContent = houses.length ? 'Ouvrez un logement, ou créez-en un nouveau.'
+    : 'Créez votre premier logement, puis relevez ses pièces avec votre téléphone ou dessinez-les. Vous pouvez aussi découvrir un logement d’exemple.';
+  ul.classList.toggle('hidden', !houses.length);
+  ul.innerHTML = houses.map(h => `<li>
     <button class="open" data-h="${h.id}"><b>${escapeHtml(h.name)}</b>
     <span>${h.levels.length > 1 ? h.levels.length + ' niveaux, ' : ''}${h.rooms.length} pièce${h.rooms.length>1?'s':''}, ${fmt(houseArea(h),1)} m²</span></button>
-    <button class="del" data-delh="${h.id}" aria-label="Supprimer ${escapeHtml(h.name)}">Supprimer</button></li>`).join('')
-    : '<li class="empty">Aucun logement pour l’instant. Créez-en un pour relever vos pièces.</li>';
+    <button class="del" data-delh="${h.id}" aria-label="Supprimer ${escapeHtml(h.name)}">Supprimer</button></li>`).join('');
+  $('#pickerClose').classList.toggle('hidden', !house);
   renderDraft();
 }
+function openPicker(){
+  if (!house) SCREENS.forEach(s => $(s).classList.add('hidden'));
+  renderPicker(); renderNav();
+  $('#houseSwitch').classList.toggle('hidden', !house); setHouseMenu(false);
+  if (!$('#picker').open) $('#picker').showModal();
+}
+$('#picker').addEventListener('cancel', e => { if (!house) e.preventDefault(); });
+$('#pickerClose').addEventListener('click', () => $('#picker').close());
 $('#houseList').addEventListener('click', e => {
   const o = e.target.closest('[data-h]'), d = e.target.closest('[data-delh]');
-  if (d){ if (!confirm('Supprimer ce logement et toutes ses pièces ?')) return; houses = houses.filter(h => h.id !== d.dataset.delh); if (house && house.id === d.dataset.delh){ house = null; stopRemote(); } persist(); renderHome(); renderNav(); return; }
+  if (d){ if (!confirm('Supprimer ce logement et toutes ses pièces ?')) return; houses = houses.filter(h => h.id !== d.dataset.delh); if (house && house.id === d.dataset.delh){ house = null; stopRemote(); } persist(); openPicker(); return; }
   if (o){ const h = houses.find(h => h.id === o.dataset.h); if (h) openHouse(h); }
 });
 $('#newHouseBtn').addEventListener('click', () => {
@@ -2754,8 +2870,8 @@ function renderDraft(){
 }
 
 /* Logement */
-let arranging = false, selIdx = null, aView = null, drag = null, houseEditing = false;
-function openHouse(h){ if (remote && remote.role === 'desktop' && remote.house !== h) stopRemote(); $('#housePlan')._zoom = null; armed = null; budgetOpen = null; house = ensureLevels(h); arranging = false; houseEditing = false; selIdx = null; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); drawIn($('#housePlan'), levelRooms(house).length); }
+let arranging = false, selIdx = null, aView = null, drag = null, houseEditing = false, works = false;
+function openHouse(h){ if (remote && remote.role === 'desktop' && remote.house !== h) stopRemote(); $('#housePlan')._zoom = null; armed = null; budgetOpen = null; house = ensureLevels(h); arranging = false; houseEditing = false; works = false; selIdx = null; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); drawIn($('#housePlan'), levelRooms(house).length); }
 function renderHouse(){
   const h = ensureLevels(house), all = h.rooms, lvl = curLevel(h);
   const rooms = levelRooms(h);
@@ -2766,6 +2882,7 @@ function renderHouse(){
   }).join('');
   if (document.activeElement !== $('#levelName')) $('#levelName').value = lvl.name;
   const plan = $('#housePlan');
+  $('#house').classList.toggle('works', works && !houseEditing && !arranging);
   plan.classList.toggle('arranging', arranging);
   plan.classList.toggle('editing', houseEditing && !arranging);
   const three = is3d() && !!v3Init();
@@ -2779,7 +2896,7 @@ function renderHouse(){
   } else {
     // Même cadrage pour tous les niveaux : les étages se superposent quand on change d'onglet
     const box = planBox(plan), v = arranging ? (aView || (aView = makeView(all, 3, box))) : makeView(all, 0.6, box);
-    const opts = { id:'hsvg', house: h, badges: houseEditing && !arranging, level: lvl.id, ghost: arranging || !rooms.length, bsel: arranging || houseEditing ? null : budgetSel(), dims: $('#dimsChk').checked && !arranging, elec: $('#elecChk').checked, sel: arranging ? movingSet() : null };
+    const opts = { id:'hsvg', house: h, badges: houseEditing && !arranging, level: lvl.id, ghost: arranging || !rooms.length, bsel: works ? budgetSel() : null, dims: $('#dimsChk').checked && !arranging, elec: $('#elecChk').checked && !works, sel: arranging ? movingSet() : null };
     plan.innerHTML = houseSVG(all, v, opts);
     plan._view = v; plan._opts = opts;
     plan._map = { S: v.S, pad: v.pad, ox: v.minX, oy: v.minY }; applyZoom(plan);
@@ -2816,6 +2933,7 @@ function renderHouse(){
   plan.classList.toggle('picking', budgetPicking());
   $('#houseEditPanel').classList.toggle('hidden', !houseEditing || arranging);
   if (houseEditing && !arranging) renderJoints();
+  renderHouseSwitch(h);
   $('#sharedPanel').classList.toggle('hidden', !h.shared);
   $('#shareBtn').classList.toggle('hidden', !all.length);
   $('#pdfBtn').classList.toggle('hidden', !all.length);
@@ -2850,8 +2968,51 @@ $('#delLevel').addEventListener('click', () => {
   house.levels = house.levels.filter(x => x !== l); house.curLevel = null; ensureLevels(house);
   save(); renderHouse();
 });
-$('#houseBack').addEventListener('click', () => { renderHome(); show('#home'); });
-$('#houseName').addEventListener('input', e => { house.name = e.target.value || 'Logement'; if (!house.demo) persist(); });
+// Sélecteur de la barre du haut : les logements, puis créer, l'exemple et la liste complète
+const CHECK_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>';
+function renderHouseSwitch(h){
+  $('#houseSwitch').classList.remove('hidden');
+  $('#houseSwitchName').textContent = h.name;
+  const list = houses.includes(h) ? houses : [h, ...houses];
+  $('#houseMenu').innerHTML = '<div class="ctx-h">Logements</div>'
+    + list.map(x => `<button class="hm" role="menuitemradio" aria-checked="${x === h}" data-hs="${x.id}"><b>${escapeHtml(x.name)}</b>${CHECK_SVG}`
+      + `<small>${plural(x.rooms.length, 'pièce')}, ${fmt(houseArea(x), 1)} m²</small></button>`).join('')
+    + '<hr><button class="act" role="menuitem" data-hs=":new">+ Nouveau logement</button>'
+    + (h.demo && !h.shared ? '' : '<button class="act" role="menuitem" data-hs=":demo">Logement d’exemple</button>')
+    + '<button class="act" role="menuitem" data-hs=":all">Gérer mes logements…</button>';
+}
+const menuItems = () => [...$('#houseMenu').querySelectorAll('button')];
+function setHouseMenu(open, focusBtn){
+  const m = $('#houseMenu'), b = $('#houseSwitchBtn');
+  m.classList.toggle('hidden', !open); b.setAttribute('aria-expanded', open);
+  if (open){
+    const r = b.getBoundingClientRect();
+    m.style.top = r.bottom + 4 + 'px';
+    m.style.left = Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8)) + 'px';
+    (m.querySelector('[aria-checked="true"]') || menuItems()[0]).focus();
+  } else if (focusBtn) b.focus();
+}
+$('#houseSwitchBtn').addEventListener('click', () => setHouseMenu($('#houseMenu').classList.contains('hidden')));
+$('#houseMenu').addEventListener('click', e => {
+  const v = e.target.closest('[data-hs]')?.dataset.hs; if (!v) return;
+  setHouseMenu(false);
+  if (v === ':new') $('#newHouseBtn').click();
+  else if (v === ':demo') $('#demoBtn').click();
+  else if (v === ':all') openPicker();
+  else { const h = houses.find(x => x.id === v); if (h && h !== house) openHouse(h); }
+});
+$('#houseMenu').addEventListener('keydown', e => {
+  const items = menuItems(), i = items.indexOf(document.activeElement);
+  const go = k => { e.preventDefault(); items[(k + items.length) % items.length].focus(); };
+  if (e.key === 'ArrowDown') go(i + 1);
+  else if (e.key === 'ArrowUp') go(i - 1);
+  else if (e.key === 'Home') go(0);
+  else if (e.key === 'End') go(items.length - 1);
+  else if (e.key === 'Escape' || e.key === 'Tab'){ if (e.key === 'Escape') e.preventDefault(); setHouseMenu(false, e.key === 'Escape'); }
+});
+document.addEventListener('pointerdown', e => { if (!$('#houseSwitch').contains(e.target) && !$('#houseMenu').classList.contains('hidden')) setHouseMenu(false); });
+window.addEventListener('resize', () => setHouseMenu(false));
+$('#houseName').addEventListener('input', e => { house.name = e.target.value || 'Logement'; if (!house.demo) persist(); renderHouseSwitch(house); });
 $('#dimsChk').addEventListener('change', renderHouse);
 $('#allChk').addEventListener('change', e => { allLevels3d = e.target.checked; renderHouse(); });
 $('#viewMode').addEventListener('click', e => {
@@ -2868,7 +3029,7 @@ function enterRoom(r){ openRoom(r); if (houseEditing) setEditing(true); }
 $('#roomList').addEventListener('click', e => { const o = e.target.closest('[data-r]'); if (o) enterRoom(house.rooms[+o.dataset.r]); });
 $('#housePlan').addEventListener('click', e => {
   if (arranging || ctxOpen()) return;
-  if (budgetPicking()){ budgetPickAt(e); return; }
+  if (housePickable()){ const k = houseSurfaceAt(e); if (k) worksPick(k); return; }
   const t = e.target.closest('[data-i]'); if (t) enterRoom(house.rooms[+t.dataset.i]);
 });
 
@@ -2937,7 +3098,7 @@ $('#housePlan').addEventListener('contextmenu', e => {
 });
 $('#delHouse').addEventListener('click', () => {
   if (!confirm('Supprimer ce logement et toutes ses pièces ?')) return;
-  houses = houses.filter(h => h !== house); house = null; persist(); renderHome(); show('#home');
+  houses = houses.filter(h => h !== house); house = null; persist(); openPicker();
 });
 // Pièce dessinée à la main : un rectangle à droite du niveau, à ajuster dans l'éditeur
 const DRAWN_ROOM = { w: 4, h: 3, gap: 0.5 };
@@ -3084,7 +3245,7 @@ $('#openPanel').addEventListener('click', () => goPanel());
 let armed = null, selMod = null, addRail = null; // disjoncteur actif, autre module choisi, rangée où ajouter
 function goPanel(){
   if (!house) return;
-  houseEditing = false; arranging = false; selIdx = null; aView = null; editing = false;
+  houseEditing = false; arranging = false; selIdx = null; aView = null; editing = false; works = false;
   $('#panelPlan')._zoom = null; selMod = null; addRail = null;
   renderPanel(); show('#panel'); drawIn($('#panelPlan'), levelRooms(house).length);
 }
@@ -3392,6 +3553,7 @@ function roomToMeters(svg, e){
 function focusWall(i){ const inp = document.getElementById('wl-' + i); if (inp){ inp.focus(); inp.select(); } }
 $('#roomPlan').addEventListener('click', e => {
   const svg = $('#roomPlan svg'); if (!svg) return;
+  if (roomPickable()){ const k = roomSurfaceAt(e); if (k) worksPick(k); return; }
   if (!placing){
     if (editing) return; // sélection et déplacements gérés au pointerdown
     const w = e.target.closest('[data-wall]'); if (w){ focusWall(w.dataset.wall); return; }
@@ -3678,10 +3840,10 @@ $('#shopCopy').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(txt); toast('Liste d’achats copiée'); }
   catch(e){ prompt('Copiez la liste :', txt.replace(/\n/g, ' | ')); }
 });
-/* Budget travaux : un poste déplié à la fois ; ses surfaces se choisissent dans la liste ou en touchant le plan 2D */
+/* Budget travaux : un poste déplié à la fois ; ses surfaces se choisissent dans la liste ou en touchant le plan 2D ou 3D */
 let budgetOpen = null, budgetTyping = false;
 const openItem = () => budgetOf(house).items.find(it => it.id === budgetOpen);
-const budgetPicking = () => { const it = openItem(); return !!it && it.mode !== 'flat' && !houseEditing && !arranging && !$('#housePlan')._v3; };
+const budgetPicking = () => { const it = openItem(); return !!it && it.mode !== 'flat' && works && !houseEditing && !arranging; };
 // Surfaces du poste ouvert, surlignées sur le plan
 const budgetSel = () => { const it = openItem(); return it && it.mode !== 'flat' ? new Set(it.sel) : null; };
 function budgetHead(h, it, c){
@@ -3760,18 +3922,78 @@ function toggleBudgetSurface(key){
   setBudgetItem(house, it.id, { sel: it.sel.includes(key) ? it.sel.filter(k => k !== key) : [...it.sel, key] });
   budgetChanged();
 }
-// Toucher le plan : un mur s'il est tout près, sinon le sol de la pièce (ses plinthes pour un poste au mètre)
-function budgetPickAt(e){
-  const svg = $('#hsvg'); if (!svg) return;
-  const q = toMeters(svg, e), it = openItem(), tol = Math.max(0.2, 16 / $('#housePlan')._view.S);
+/* Travaux : viser un mur ou un sol sur les plans 2D et 3D ; la surface survolée est surlignée.
+   Avec un poste de budget ouvert, la surface s'y ajoute ou s'en retire ; sinon sa finition s'ouvre. */
+// Surface sous le point q (en mètres) : un mur s'il est à moins de tol, sinon le sol de la pièce
+function surfaceAt(rooms, q, tol){
   let best = null;
-  levelRooms(house).forEach(r => r.pts.forEach((a, i) => { const d = segDist(q, a, r.pts[(i + 1) % r.pts.length]); if (!best || d < best.d) best = { r, i, d }; }));
-  const room = levelRooms(house).find(r => inside(q, r.pts)) || (best && best.d < tol ? best.r : null);
-  if (!room) return;
-  if (BUDGET_MODES[it.mode].measure === 'length') toggleBudgetSurface(room.id + '|p');
-  else if (best && best.d < tol) toggleBudgetSurface(`${best.r.id}|w${best.i}`);
-  else toggleBudgetSurface(room.id + '|f');
+  rooms.forEach(r => r.pts.forEach((a, i) => { const d = segDist(q, a, r.pts[(i + 1) % r.pts.length]); if (!best || d < best.d) best = { r, i, d }; }));
+  if (best && best.d < tol) return `${best.r.id}|w${best.i}`;
+  const room = rooms.find(r => inside(q, r.pts));
+  return room ? room.id + '|f' : null;
 }
+const onHouse = () => visible('#house') && budgetPicking();
+const lengthPick = () => onHouse() && BUDGET_MODES[openItem().mode].measure === 'length';
+// Un poste au mètre compte les plinthes : toute la pièce visée
+const shownSurface = key => lengthPick() ? key.split('|')[0] + '|p' : key;
+// Un mur fait partie des plinthes de sa pièce
+const surfaceMatch = (keys, k) => keys.has(k) || (k.includes('|w') && keys.has(k.split('|')[0] + '|p'));
+// Finition d'une surface : le mur s'il est différent des autres, sinon les murs de la pièce
+function surfaceFin(r, key){
+  const c = key.split('|')[1];
+  if (c === 'f') return 'floor';
+  if (c === 'c') return 'ceiling';
+  const i = +c.slice(1); return accentOf(r, i) ? 'a' + i : 'walls';
+}
+function worksPick(key){
+  const r = house.rooms.find(x => x.id === key.split('|')[0]); if (!r) return;
+  if (onHouse()) return toggleBudgetSurface(shownSurface(key));
+  if (roomRef !== r || !visible('#room')) openRoom(r);
+  openFin = surfaceFin(r, key); renderFinishes();
+  const li = $('#finishList').querySelector(`[data-row="${openFin}"]`);
+  if (li) li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+// Surlignage 2D : un calque posé sur le plan, sans redessiner le reste
+function hoverSVG(r, key, T){
+  const c = key.split('|')[1], pts = r.pts.map(T), xy = q => q.map(n => n.toFixed(1)).join(',');
+  if (c[0] === 'w'){
+    const i = +c.slice(1), [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length];
+    return `<line class="hov-w" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+  }
+  return `<polygon class="${c === 'p' ? 'hov-p' : 'hov-f'}" points="${pts.map(xy).join(' ')}"/>`;
+}
+function setPlanHover(plan, key, T){
+  const svg = plan.querySelector('svg'), r = key && house.rooms.find(x => x.id === key.split('|')[0]);
+  plan.classList.toggle('hovering', !!r);
+  if (!svg) return;
+  let g = svg.querySelector(':scope > .hov');
+  if (!g){ g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.setAttribute('class', 'hov'); g.setAttribute('pointer-events', 'none'); svg.appendChild(g); }
+  g.innerHTML = r ? hoverSVG(r, shownSurface(key), T) : '';
+}
+// Plan du logement : coordonnées et surface visée
+const houseT = v => ([x, y]) => [(x - v.minX) * v.S + v.pad, (y - v.minY) * v.S + v.pad];
+function houseSurfaceAt(e){
+  const svg = $('#hsvg'), v = $('#housePlan')._view; if (!svg || !v) return null;
+  return surfaceAt(levelRooms(house), toMeters(svg, e), Math.max(0.2, 16 / v.S));
+}
+// Plan de la pièce : le plan est tourné comme celui du logement
+const roomT = tf => q => { const [x, y] = rotPts([q], tf.ang)[0]; return [(x - tf.x0) * tf.S + tf.pad, (y - tf.y0) * tf.S + tf.pad]; };
+function roomSurfaceAt(e){
+  const svg = $('#roomPlan svg'), tf = $('#roomPlan')._tf; if (!svg || !tf) return null;
+  return surfaceAt([roomRef], roomToMeters(svg, e), Math.max(0.15, 14 / tf.S));
+}
+const housePickable = () => works && !houseEditing && !arranging && !$('#housePlan')._v3;
+const roomPickable = () => works && !editing && !placing;
+$('#housePlan').addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse' || drag || !housePickable()) return;
+  setPlanHover($('#housePlan'), houseSurfaceAt(e), houseT($('#housePlan')._view));
+});
+$('#housePlan').addEventListener('pointerleave', () => { if (!$('#housePlan')._v3) setPlanHover($('#housePlan'), null); });
+$('#roomPlan').addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse' || rdrag || !roomPickable()) return;
+  setPlanHover($('#roomPlan'), roomSurfaceAt(e), roomT($('#roomPlan')._tf));
+});
+$('#roomPlan').addEventListener('pointerleave', () => setPlanHover($('#roomPlan'), null));
 $('#budgetAdd').addEventListener('change', e => {
   const [k, v] = e.target.value.split(':'); if (!k) return;
   let it;
@@ -3837,6 +4059,7 @@ function renderRoom(){
   $('#roomPlan').innerHTML = out.svg; $('#roomPlan')._tf = out.tf;
   $('#roomPlan')._map = { S: out.tf.S, pad: out.tf.pad, ox: out.tf.x0, oy: out.tf.y0 }; applyZoom($('#roomPlan'));
   $('#roomPlan').classList.toggle('editing', editing);
+  $('#room').classList.toggle('works', works && !editing);
   $('#editPanel').classList.toggle('hidden', !editing);
   $('#editBtn').classList.toggle('hidden', editing);
   $('#undoEdit').disabled = !editHistory.length;
@@ -4336,13 +4559,10 @@ async function checkSupport(){
   renderNav();
 }
 
-const hv = makeView(SAMPLE_ROOMS);
-$('#heroPlan').innerHTML = houseSVG(SAMPLE_ROOMS, hv, {});
-drawIn($('#heroPlan'), SAMPLE_ROOMS.length);
-renderHome();
 renderNav();
 const openLink = () => { if (!openRemoteLink()) openSharedLink(); };
 openLink();
+if (!house && !remote) openPicker();
 window.addEventListener('hashchange', openLink);
 checkSupport();
 })();
