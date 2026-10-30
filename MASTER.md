@@ -141,7 +141,13 @@ No blurred shadows outside the AR overlay.
 - **Focus**: `2px solid var(--pencil)`, offset 3px.
 - **Input**: no box, 1px `--ink-soft` underline, 2px pencil underline on focus, figures in letter 600.
 - **Select**: 1px `--ink-soft` border, `--r1`, `--sheet` ground.
-- **Tabs (levels)**: 1px ink border, selected = ink fill + `--on-ink` text.
+- **Tabs (levels)**: 1px ink border, selected = ink fill + `--on-ink` text. A 40px `+` mini after them opens
+  the context menu to add a floor or a basement. Renaming the house and the level lives in the Éditeur panel.
+- **Corner alignment** (house and room editors): Alt-drag guides are 1px dashed pencil lines to the reference corners,
+  plus a 9px pencil ring when the corner lands on another one. Picked corners use the selected vertex style.
+- **Travaux tabs**: same tabs, full width, Pièces / Achats / Budget, one pane at a time, counts in `small`.
+- **Side panel**: dense annotation. Section titles 18px, list rows `--s2`, cartouche figures at `--fs-h2`.
+  Hints are one short line at most. The electrical legend is a closed disclosure (`--fs-label` summary).
 - **List row**: hairline top rule, name in text 600, figures right in letter tabular.
 - **Cartouche** (stats, sheet headers): 1px ink frame, cells split by 1px ink rules, label above value.
 - **Nav**: sheet ground, hairline top rule (left rule on the side rail), labels in `--fs-label`;
