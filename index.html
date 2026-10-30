@@ -3614,9 +3614,7 @@ function nearestCorner(q){
 }
 // group : plusieurs pièces modifiées d'un coup, annulées ensemble
 const pushHouseHistory = (room, pts, items, group = null) => { houseHistory = houseHistory.concat({ room, pts, items, group }).slice(-60); };
-// Axes propres d'une pièce, ramenés à ±45° pour que « horizontal » reste horizontal à l'écran
-const squareAngle = p => { const a = longestAngle(p), q = Math.PI / 2; return a - Math.round(a / q) * q; };
-/* Alt pendant le glisser : aligne le coin sur les coins reliés (ses voisins dans la pièce) en priorité,
+/* Alt pendant le glisser : aligne le coin, dans les axes de l'écran, sur les coins reliés (ses voisins dans la pièce) en priorité,
    sinon sur les coins les plus proches des autres pièces du niveau, et le pose sur un coin tout proche */
 const ALIGN = { tol: 14 }; // px à l'écran
 // Coins de référence d'une pièce pour son coin k : les deux voisins sont « reliés »
@@ -3682,7 +3680,7 @@ $('#housePlan').addEventListener('pointermove', e => {
   if (!cdrag.moved && !cdrag.inserted) pushHouseHistory(house.rooms[cdrag.i], cdrag.pts, cdrag.items);
   cdrag.moved = true;
   const r = house.rooms[cdrag.i], c = cdrag.pts[cdrag.k], np = cdrag.pts.map(p => p.slice());
-  const al = e.altKey ? alignCorner(cdrag.i, cdrag.k, [c[0]+dx, c[1]+dy], v, cdrag.axis) : null;
+  const al = e.altKey ? alignCorner(cdrag.i, cdrag.k, [c[0]+dx, c[1]+dy], v, 0) : null;
   np[cdrag.k] = al ? al.q : snapCorner(np, cdrag.k, [c[0]+dx, c[1]+dy], v, cdrag.axis);
   r.pts = np; r.items = remapItems(cdrag.pts, np, cdrag.items);
   const layer = $('#hsvg-layer');
@@ -3700,16 +3698,17 @@ $('#houseUndo').addEventListener('click', () => {
   steps.forEach(s => { if (house.rooms.includes(s.room)){ s.room.pts = s.pts; s.room.items = s.items; } });
   save(); renderHouse();
 });
-// Coins ks ramenés sur la coordonnée target de l'axe ax, dans le repère tourné de axis
+// Coins ks ramenés sur la coordonnée target de l'axe ax, dans le repère tourné de axis (celui de l'écran)
 const alignedPts = (pts, ks, ax, axis, target) => pts.map((c, k) => {
   if (!ks.includes(k)) return c.slice();
   const w = rotPts([c], axis)[0]; w[ax] = target; return rotPts([w], -axis)[0];
 });
 const alignMsg = (n, ax) => `${plural(n, 'coin')} aligné${n > 1 ? 's' : ''} ${ax ? 'à l’horizontale' : 'à la verticale'}`;
-// Aligne les coins choisis sur le premier, dans les axes de sa pièce (ax 1 : même hauteur, ax 0 : même abscisse)
+// Aligne les coins choisis sur le premier, dans les axes de l'écran (ax 1 : même hauteur, ax 0 : même abscisse) ;
+// le plan du logement n'est pas tourné, le plan d'une pièce l'est de l'angle de son cadrage
 function alignPicked(ax){
   if (cornerPick.length < 2) return;
-  const [i0, k0] = cornerPick[0], axis = -squareAngle(house.rooms[i0].pts), toV = pt => rotPts([pt], axis)[0];
+  const [i0, k0] = cornerPick[0], axis = 0, toV = pt => rotPts([pt], axis)[0];
   const target = toV(house.rooms[i0].pts[k0])[ax], group = uid('g'), byRoom = new Map();
   cornerPick.forEach(([i, k]) => byRoom.set(i, [...(byRoom.get(i) || []), k]));
   byRoom.forEach((ks, i) => {
@@ -3769,7 +3768,7 @@ $('#roomCornerClear').addEventListener('click', () => { roomPick = []; renderRoo
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && roomPick.length && visible('#room')){ roomPick = []; renderRoom(); } });
 function alignRoomPicked(ax){
   const r = roomRef, p = r.pts; if (roomPick.length < 2) return;
-  const axis = -squareAngle(p), target = rotPts([p[roomPick[0]]], axis)[0][ax], np = alignedPts(p, roomPick, ax, axis, target);
+  const axis = $('#roomPlan')._tf.ang, target = rotPts([p[roomPick[0]]], axis)[0][ax], np = alignedPts(p, roomPick, ax, axis, target);
   snapshot();
   r.items = remapItems(p, np, r.items || []); r.pts = np;
   save(); renderRoom(); toast(alignMsg(roomPick.length, ax));
@@ -3881,7 +3880,7 @@ $('#roomPlan').addEventListener('pointermove', e => {
   if (rdrag.corner != null){
     const c = rdrag.pts[rdrag.corner], np = rdrag.pts.map(v => v.slice()), q = [c[0]+dx, c[1]+dy];
     // Alt : aligne sur les autres coins de la pièce, ses voisins d'abord, avec des repères
-    rdrag.snap = e.altKey ? alignPoint(q, ownRefs(rdrag.pts, rdrag.corner), ALIGN.tol / rdrag.frame.S, rdrag.axis) : null;
+    rdrag.snap = e.altKey ? alignPoint(q, ownRefs(rdrag.pts, rdrag.corner), ALIGN.tol / rdrag.frame.S, rdrag.frame.ang) : null;
     np[rdrag.corner] = rdrag.snap ? rdrag.snap.q : snapCorner(np, rdrag.corner, q, rdrag.frame, rdrag.axis);
     r.pts = np; r.items = remapItems(rdrag.pts, np, rdrag.items);
   } else {
