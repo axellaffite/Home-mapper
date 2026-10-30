@@ -532,12 +532,14 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
   <div class="toolbar" id="houseTools">
     <label class="chk" data-2d><input type="checkbox" id="dimsChk"> Cotes</label>
     <label class="chk" data-2d data-plan><input type="checkbox" id="elecChk" checked> Électricité</label>
+    <label class="chk" data-2d><input type="checkbox" id="ghostChk"> Autres niveaux</label>
     <label class="chk hidden" id="allLvl"><input type="checkbox" id="allChk"> Tous les niveaux</label>
   </div>
   <div class="legend" id="legend" data-plan></div>
   <div class="arrange hidden" id="houseEditPanel">
-    <p>Touchez une pièce du plan ou de la liste pour modifier ses murs, ses cotes, ses ouvertures et son électricité.</p>
+    <p>Faites glisser les coins pour redessiner les pièces directement sur le plan. Touchez une pièce du plan ou de la liste pour modifier ses murs, ses cotes, ses ouvertures et son électricité.</p>
     <div class="row" style="margin-top:0">
+      <button class="btn btn-ghost" id="houseUndo">Annuler</button>
       <button class="btn btn-ghost" id="drawBtn">Dessiner une pièce</button>
       <button class="btn btn-ghost" id="arrangeBtn">Ajuster la disposition</button>
     </div>
@@ -546,7 +548,11 @@ main.wrap.leaving.hidden{display:block!important;position:fixed;z-index:5;margin
     <ul class="list joints" id="jointList"></ul>
   </div>
   <div class="arrange hidden" id="arrangePanel">
-    <p id="arrangeHint">Touchez une pièce puis faites-la glisser pour la déplacer. Les pointillés montrent les autres niveaux, pour aligner les escaliers.</p>
+    <p id="arrangeHint"></p>
+    <div class="rot">
+      <button id="pickLevel">Tout le niveau</button><button id="pickNone">Aucune</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="multiChk"> Sélection multiple</label>
     <div class="rot">
       <button data-rot="-90">−90°</button><button data-rot="-2">−2°</button>
       <button data-rot="2">+2°</button><button data-rot="90">+90°</button>
@@ -1361,9 +1367,19 @@ function houseLayer(rooms, v, opts){
   });
   const jt = opts.house ? jointsSVG(opts.house, opts.level, T, v.S, opts.badges) : '';
   const wires = hot && opts.house && opts.level ? wiresSVG(opts.house, opts.level, hot, T) : '';
+  const hc = opts.handles ? cornerHandles(rooms, T, opts) : '';
   // En sélection d'appareils, les symboles restent seuls à recevoir les touchers
-  return opts.pick ? polys + `<g class="ink-top"><g pointer-events="none">${jt}${wires}${labels}</g>${items}</g>`
-                   : polys + `<g class="ink-top" pointer-events="none">${jt}${wires}${items}${labels}</g>`;
+  return opts.pick ? polys + `<g class="ink-top"><g pointer-events="none">${jt}${wires}${labels}</g>${items}</g>` + hc
+                   : polys + `<g class="ink-top" pointer-events="none">${jt}${wires}${items}${labels}</g>` + hc;
+}
+// Coins saisissables de toutes les pièces du niveau (éditeur du logement)
+function cornerHandles(rooms, T, opts){
+  const sel = opts.selCorner || [];
+  const vtx = rooms.map((r, i) => r.levelId !== opts.level ? '' : r.pts.map((q, k) => {
+    const [x, y] = T(q).map(n => n.toFixed(1));
+    return `<g class="vtx${sel[0] === i && sel[1] === k ? ' sel' : ''}" data-hc="${i}:${k}"><circle class="vhit" cx="${x}" cy="${y}" r="14"/><circle cx="${x}" cy="${y}" r="5"/></g>`;
+  }).join('')).join('');
+  return `<g class="edit">${vtx}</g>`;
 }
 function houseSVG(rooms, v, opts = {}){
   return `<svg id="${opts.id||''}" viewBox="0 0 ${v.W.toFixed(0)} ${v.H.toFixed(0)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plan du logement">${SVG_STYLE}
@@ -2770,20 +2786,20 @@ function renderNav(){
   $('#nav [data-nav="scan"]').classList.toggle('off', !house || house.demo);
 }
 function goPlan(){
-  houseEditing = false; arranging = false; selIdx = null; aView = null; editing = false; works = false;
+  houseEditing = false; arranging = false; picked = []; aView = null; editing = false; works = false;
   renderHouse(); show('#house');
 }
 function goEditor(){
   works = false;
   if (visible('#room')){ setEditing(true); return; }
-  houseEditing = true; arranging = false; selIdx = null; aView = null;
+  houseEditing = true; arranging = false; picked = []; aView = null;
   renderHouse(); show('#house');
 }
 // Travaux : finitions, achats et budget, sur le logement ou la pièce ouverte
 function goWorks(){
   works = true;
   if (visible('#room')){ setPlacing(null); setEditing(false); return; }
-  houseEditing = false; arranging = false; selIdx = null; aView = null; editing = false;
+  houseEditing = false; arranging = false; picked = []; aView = null; editing = false;
   renderHouse(); show('#house');
 }
 function goScan(){
@@ -2870,8 +2886,8 @@ function renderDraft(){
 }
 
 /* Logement */
-let arranging = false, selIdx = null, aView = null, drag = null, houseEditing = false, works = false;
-function openHouse(h){ if (remote && remote.role === 'desktop' && remote.house !== h) stopRemote(); $('#housePlan')._zoom = null; armed = null; budgetOpen = null; house = ensureLevels(h); arranging = false; houseEditing = false; works = false; selIdx = null; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); drawIn($('#housePlan'), levelRooms(house).length); }
+let arranging = false, picked = [], aView = null, drag = null, houseEditing = false, works = false, cdrag = null, houseHistory = [];
+function openHouse(h){ if (remote && remote.role === 'desktop' && remote.house !== h) stopRemote(); $('#housePlan')._zoom = null; armed = null; budgetOpen = null; house = ensureLevels(h); arranging = false; houseEditing = false; works = false; picked = []; aView = null; $('#houseName').value = h.name; renderHouse(); show('#house'); drawIn($('#housePlan'), levelRooms(house).length); }
 function renderHouse(){
   const h = ensureLevels(house), all = h.rooms, lvl = curLevel(h);
   const rooms = levelRooms(h);
@@ -2896,7 +2912,9 @@ function renderHouse(){
   } else {
     // Même cadrage pour tous les niveaux : les étages se superposent quand on change d'onglet
     const box = planBox(plan), v = arranging ? (aView || (aView = makeView(all, 3, box))) : makeView(all, 0.6, box);
-    const opts = { id:'hsvg', house: h, badges: houseEditing && !arranging, level: lvl.id, ghost: arranging || !rooms.length, bsel: works ? budgetSel() : null, dims: $('#dimsChk').checked && !arranging, elec: $('#elecChk').checked && !works, sel: arranging ? movingSet() : null };
+    const editCorners = houseEditing && !arranging && !works;
+    const opts = { id:'hsvg', house: h, badges: houseEditing && !arranging, level: lvl.id, ghost: arranging || !rooms.length || $('#ghostChk').checked, bsel: works ? budgetSel() : null, dims: $('#dimsChk').checked && !arranging, elec: $('#elecChk').checked && !works, sel: arranging ? movingSet() : null,
+                   handles: editCorners, selCorner: cdrag ? [cdrag.i, cdrag.k] : null };
     plan.innerHTML = houseSVG(all, v, opts);
     plan._view = v; plan._opts = opts;
     plan._map = { S: v.S, pad: v.pad, ox: v.minX, oy: v.minY }; applyZoom(plan);
@@ -2914,7 +2932,11 @@ function renderHouse(){
     ? Object.keys(DEVICES).filter(k => counts[k]).map(k => `<span>${deviceIcon(k)}${DEVICES[k].label} <b>${counts[k]}</b></span>`).join('') : '';
   $('#arrangeBtn').disabled = rooms.length < 1 || all.length < 2;
   $('#arrangePanel').classList.toggle('hidden', !arranging);
-  $('#arrangePanel').querySelectorAll('[data-rot]').forEach(b => b.disabled = selIdx == null);
+  $('#arrangePanel').querySelectorAll('[data-rot]').forEach(b => b.disabled = !picked.length);
+  $('#pickNone').disabled = !picked.length;
+  const nSel = arranging ? movingSet().size : 0;
+  $('#arrangeHint').textContent = nSel > 1 ? `${nSel} pièces sélectionnées : faites-les glisser ou pivoter ensemble.`
+    : 'Touchez une pièce puis faites-la glisser pour la déplacer. Maj ou Ctrl + clic, ou « Sélection multiple », pour en choisir plusieurs. Les pointillés montrent les autres niveaux, pour aligner les escaliers.';
   const la = rooms.reduce((s,r)=>s+area(r.pts),0), tot = houseArea(h);
   const vol = all.reduce((s,r)=>s+area(r.pts)*(r.height||0),0);
   const stats = [[fmt(la,1)+' m²', 'Surface du niveau'], [String(rooms.length), rooms.length>1?'Pièces du niveau':'Pièce du niveau']];
@@ -2932,6 +2954,7 @@ function renderHouse(){
   if (!$('#budgetList').contains(document.activeElement)) renderBudget(h); else refreshBudget(h);
   plan.classList.toggle('picking', budgetPicking());
   $('#houseEditPanel').classList.toggle('hidden', !houseEditing || arranging);
+  $('#houseUndo').classList.toggle('hidden', !houseHistory.some(s => all.includes(s.room)));
   if (houseEditing && !arranging) renderJoints();
   renderHouseSwitch(h);
   $('#sharedPanel').classList.toggle('hidden', !h.shared);
@@ -2949,13 +2972,13 @@ function renderHouse(){
 }
 $('#levelTabs').addEventListener('click', e => {
   const b = e.target.closest('[data-l]'); if (!b) return;
-  house.curLevel = b.dataset.l; selIdx = null; $('#housePlan')._zoom = null; save(); renderHouse(); drawIn($('#housePlan'), levelRooms(house).length);
+  house.curLevel = b.dataset.l; picked = []; $('#housePlan')._zoom = null; save(); renderHouse(); drawIn($('#housePlan'), levelRooms(house).length);
 });
 $('#levelName').addEventListener('input', e => { const l = curLevel(house); l.name = e.target.value || levelLabel(l.order); save(); renderHouse(); });
 function addLevel(dir){
   const orders = house.levels.map(l => l.order);
   const o = dir > 0 ? Math.max(...orders) + 1 : Math.min(...orders) - 1;
-  const l = levelByOrder(house, o, true); house.curLevel = l.id; selIdx = null; save(); renderHouse();
+  const l = levelByOrder(house, o, true); house.curLevel = l.id; picked = []; save(); renderHouse();
   toast(`${l.name} ajouté`);
 }
 $('#addUpBtn').addEventListener('click', () => addLevel(1));
@@ -3024,6 +3047,7 @@ $('#viewMode').addEventListener('click', e => {
   else if (!view3d) drawIn($('#housePlan'), levelRooms(house).length);
 });
 $('#elecChk').addEventListener('change', renderHouse);
+$('#ghostChk').addEventListener('change', renderHouse);
 // Ouvre une pièce, directement dans l'éditeur en mode Éditeur
 function enterRoom(r){ openRoom(r); if (houseEditing) setEditing(true); }
 $('#roomList').addEventListener('click', e => { const o = e.target.closest('[data-r]'); if (o) enterRoom(house.rooms[+o.dataset.r]); });
@@ -3245,7 +3269,7 @@ $('#openPanel').addEventListener('click', () => goPanel());
 let armed = null, selMod = null, addRail = null; // disjoncteur actif, autre module choisi, rangée où ajouter
 function goPanel(){
   if (!house) return;
-  houseEditing = false; arranging = false; selIdx = null; aView = null; editing = false; works = false;
+  houseEditing = false; arranging = false; picked = []; aView = null; editing = false; works = false;
   $('#panelPlan')._zoom = null; selMod = null; addRail = null;
   renderPanel(); show('#panel'); drawIn($('#panelPlan'), levelRooms(house).length);
 }
@@ -3450,20 +3474,29 @@ $('#panelLevels').addEventListener('click', e => {
 $('#panelBack').addEventListener('click', () => goPlan());
 
 /* Ajustement de la disposition */
+// Pièces choisies, plus celles de leur relevé si « Déplacer avec les pièces du même relevé » est coché
 function movingSet(){
-  if (selIdx == null) return new Set();
-  const r = house.rooms[selIdx];
-  if ($('#groupChk').checked && r.sid) return new Set(house.rooms.map((x,i)=>x.sid===r.sid?i:-1).filter(i=>i>=0));
-  return new Set([selIdx]);
+  const group = $('#groupChk').checked;
+  const sids = new Set(group ? picked.map(i => house.rooms[i].sid).filter(Boolean) : []);
+  return new Set(house.rooms.map((x,i) => picked.includes(i) || sids.has(x.sid) ? i : -1).filter(i => i >= 0));
 }
+// Maj, Ctrl/Cmd ou la case « Sélection multiple » ajoutent ou retirent une pièce de la sélection
+const additive = e => e.shiftKey || e.ctrlKey || e.metaKey || $('#multiChk').checked;
+const togglePick = i => picked.includes(i) ? picked.filter(x => x !== i) : picked.concat(i);
 function save(){ if (!house.demo) persist(); }
-$('#arrangeBtn').addEventListener('click', () => { arranging = true; selIdx = null; aView = null; renderHouse(); });
-$('#arrangeDone').addEventListener('click', () => { arranging = false; selIdx = null; aView = null; save(); renderHouse(); });
+$('#arrangeBtn').addEventListener('click', () => { arranging = true; picked = []; aView = null; renderHouse(); });
+$('#arrangeDone').addEventListener('click', () => { arranging = false; picked = []; aView = null; save(); renderHouse(); });
 $('#groupChk').addEventListener('change', renderHouse);
+$('#pickLevel').addEventListener('click', () => {
+  const lvl = house.curLevel;
+  picked = house.rooms.map((r,i) => r.levelId === lvl ? i : -1).filter(i => i >= 0); renderHouse();
+});
+$('#pickNone').addEventListener('click', () => { picked = []; renderHouse(); });
 $('#arrangePanel').addEventListener('click', e => {
-  const b = e.target.closest('[data-rot]'); if (!b || selIdx == null) return;
-  const set = [...movingSet()], all = set.flatMap(i => house.rooms[i].pts);
-  const c = [all.reduce((s,p)=>s+p[0],0)/all.length, all.reduce((s,p)=>s+p[1],0)/all.length];
+  const b = e.target.closest('[data-rot]'); if (!b || !picked.length) return;
+  // Pivot au centre de l'ensemble : les pièces tournent ensemble et gardent leur disposition relative
+  const set = [...movingSet()], [x0,y0,x1,y1] = bbox(set.map(i => house.rooms[i].pts));
+  const c = [(x0+x1)/2, (y0+y1)/2];
   const ang = (+b.dataset.rot) * Math.PI/180;
   set.forEach(i => { house.rooms[i].pts = rotPts(house.rooms[i].pts, ang, c); });
   save(); renderHouse();
@@ -3474,11 +3507,15 @@ function toMeters(svg, e){
   return [(p.x - v.pad)/v.S + v.minX, (p.y - v.pad)/v.S + v.minY];
 }
 $('#housePlan').addEventListener('pointerdown', e => {
-  if (!arranging) return;
+  if (!arranging || !e.isPrimary) return;
   const svg = $('#hsvg'); if (!svg) return;
   const t = e.target.closest('[data-i]');
-  if (!t){ selIdx = null; renderHouse(); return; }
-  selIdx = +t.dataset.i; renderHouse();
+  if (!t){ if (!additive(e)){ picked = []; renderHouse(); } return; }
+  const i = +t.dataset.i;
+  // Sans ajout, toucher une pièce déjà choisie fait glisser toute la sélection
+  picked = additive(e) ? togglePick(i) : picked.includes(i) ? picked : [i];
+  renderHouse();
+  if (!picked.includes(i)) return;
   const svg2 = $('#hsvg'), idx = [...movingSet()];
   drag = { svg: svg2, start: toMeters(svg2, e), idx, orig: idx.map(i => house.rooms[i].pts.map(p => p.slice())) };
   svg2.setPointerCapture(e.pointerId);
@@ -3494,6 +3531,45 @@ $('#housePlan').addEventListener('pointermove', e => {
 const endDrag = () => { if (!drag) return; drag = null; aView = null; save(); renderHouse(); };
 $('#housePlan').addEventListener('pointerup', endDrag);
 $('#housePlan').addEventListener('pointercancel', endDrag);
+
+/* Éditeur du logement : glisser les coins des pièces directement sur le plan commun */
+
+// Coin le plus proche du pointeur parmi les pièces du niveau (les coins de pièces voisines se superposent)
+function nearestCorner(q){
+  let best = null;
+  house.rooms.forEach((r, i) => { if (r.levelId !== house.curLevel) return;
+    r.pts.forEach((c, k) => { const d = dist(c, q); if (!best || d < best.d) best = { i, k, d }; }); });
+  return best;
+}
+$('#housePlan').addEventListener('pointerdown', e => {
+  if (!houseEditing || arranging || !e.isPrimary || !e.target.closest('[data-hc]')) return;
+  const svg = $('#hsvg'); if (!svg) return;
+  e.preventDefault();
+  const q = toMeters(svg, e), { i, k } = nearestCorner(q), r = house.rooms[i];
+  cdrag = { svg, i, k, start: q, moved: false, pts: r.pts.map(c => c.slice()), items: (r.items || []).map(it => ({ ...it })), axis: -longestAngle(r.pts) };
+  svg.setPointerCapture(e.pointerId);
+});
+$('#housePlan').addEventListener('pointermove', e => {
+  if (!cdrag) return;
+  const q = toMeters(cdrag.svg, e), v = $('#housePlan')._view, dx = q[0] - cdrag.start[0], dy = q[1] - cdrag.start[1];
+  if (!cdrag.moved && Math.hypot(dx, dy) * v.S < 4) return;
+  if (!cdrag.moved) houseHistory = houseHistory.concat({ room: house.rooms[cdrag.i], pts: cdrag.pts, items: cdrag.items }).slice(-60);
+  cdrag.moved = true;
+  const r = house.rooms[cdrag.i], c = cdrag.pts[cdrag.k], np = cdrag.pts.map(p => p.slice());
+  np[cdrag.k] = snapCorner(np, cdrag.k, [c[0]+dx, c[1]+dy], v, cdrag.axis);
+  r.pts = np; r.items = remapItems(cdrag.pts, np, cdrag.items);
+  const layer = $('#hsvg-layer');
+  if (layer) layer.innerHTML = houseLayer(house.rooms, v, { ...$('#housePlan')._opts, selCorner: [cdrag.i, cdrag.k] });
+});
+const endCornerDrag = () => { if (!cdrag) return; const moved = cdrag.moved; cdrag = null; if (moved) save(); renderHouse(); };
+$('#housePlan').addEventListener('pointerup', endCornerDrag);
+$('#housePlan').addEventListener('pointercancel', endCornerDrag);
+$('#houseUndo').addEventListener('click', () => {
+  const s = houseHistory[houseHistory.length - 1]; if (!s) return;
+  houseHistory = houseHistory.slice(0, -1);
+  if (house.rooms.includes(s.room)){ s.room.pts = s.pts; s.room.items = s.items; save(); }
+  renderHouse();
+});
 
 /* Pièce */
 function openRoom(r){
@@ -3657,8 +3733,12 @@ $('#roomPlan').addEventListener('pointercancel', endRoomDrag);
 attachZoom($('#roomPlan'), t => editing && !placing && !!t.closest('[data-corner],[data-mid],[data-item]'),
   () => { if (rdrag){ rdrag = null; undoEdit(); } });
 attachZoom($('#panelPlan'), t => !!t.closest('[data-item]'), () => {});
-attachZoom($('#housePlan'), t => arranging && !!t.closest('[data-i]'),
-  () => { if (drag){ drag.idx.forEach((ri, k) => { house.rooms[ri].pts = drag.orig[k]; }); drag = null; renderHouse(); } });
+attachZoom($('#housePlan'), t => arranging ? !!t.closest('[data-i]') : houseEditing && !works && !!t.closest('[data-hc]'),
+  () => {
+    if (drag){ drag.idx.forEach((ri, k) => { house.rooms[ri].pts = drag.orig[k]; }); drag = null; renderHouse(); }
+    if (cdrag){ const r = house.rooms[cdrag.i]; r.pts = cdrag.pts; r.items = cdrag.items;
+      if (cdrag.moved) houseHistory = houseHistory.slice(0, -1); cdrag = null; renderHouse(); }
+  });
 function renderItems(){
   const r = roomRef, p = r.pts, items = r.items || [];
   if (!items.length){ $('#itemList').innerHTML = '<li class="empty">Aucun élément. Ajoutez-en pendant le relevé en réalité augmentée, ou placez-les sur le plan ci-dessus.</li>'; return; }
