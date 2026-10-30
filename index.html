@@ -1372,14 +1372,22 @@ function houseLayer(rooms, v, opts){
   return opts.pick ? polys + `<g class="ink-top"><g pointer-events="none">${jt}${wires}${labels}</g>${items}</g>` + hc
                    : polys + `<g class="ink-top" pointer-events="none">${jt}${wires}${items}${labels}</g>` + hc;
 }
-// Coins saisissables de toutes les pièces du niveau (éditeur du logement)
+// Coins saisissables et « + » d'ajout de coin de toutes les pièces du niveau (éditeur du logement)
+const HOUSE_MID = { inset: 26, minLen: 56 }; // en unités du plan : décalage vers l'intérieur, mur le plus court qui reçoit un « + »
 function cornerHandles(rooms, T, opts){
-  const sel = opts.selCorner || [];
-  const vtx = rooms.map((r, i) => r.levelId !== opts.level ? '' : r.pts.map((q, k) => {
+  const sel = opts.selCorner || [], mine = rooms.map((r, i) => [r, i]).filter(([r]) => r.levelId === opts.level);
+  const mids = mine.map(([r, i]) => r.pts.map((a, k) => {
+    const A = T(a), B = T(r.pts[(k+1) % r.pts.length]);
+    if (dist(A, B) < HOUSE_MID.minLen) return '';
+    const nn = inwardNormal(r.pts, k);
+    const mx = ((A[0]+B[0])/2 + nn[0]*HOUSE_MID.inset).toFixed(1), my = ((A[1]+B[1])/2 + nn[1]*HOUSE_MID.inset).toFixed(1);
+    return `<g class="mid" data-hm="${i}:${k}" transform="translate(${mx} ${my})"><circle r="7"/><path d="M-3.5 0H3.5M0 -3.5V3.5"/></g>`;
+  }).join('')).join('');
+  const vtx = mine.map(([r, i]) => r.pts.map((q, k) => {
     const [x, y] = T(q).map(n => n.toFixed(1));
     return `<g class="vtx${sel[0] === i && sel[1] === k ? ' sel' : ''}" data-hc="${i}:${k}"><circle class="vhit" cx="${x}" cy="${y}" r="14"/><circle cx="${x}" cy="${y}" r="5"/></g>`;
   }).join('')).join('');
-  return `<g class="edit">${vtx}</g>`;
+  return `<g class="edit">${mids}${vtx}</g>`;
 }
 function houseSVG(rooms, v, opts = {}){
   return `<svg id="${opts.id||''}" viewBox="0 0 ${v.W.toFixed(0)} ${v.H.toFixed(0)}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Plan du logement">${SVG_STYLE}
@@ -3541,19 +3549,34 @@ function nearestCorner(q){
     r.pts.forEach((c, k) => { const d = dist(c, q); if (!best || d < best.d) best = { i, k, d }; }); });
   return best;
 }
+const pushHouseHistory = (room, pts, items) => { houseHistory = houseHistory.concat({ room, pts, items }).slice(-60); };
+// « + » : insère un coin au milieu du mur, puis le glisser le déplace (une seule étape d'annulation)
+function insertCorner(i, w){
+  const r = house.rooms[i], p = r.pts, a = p[w], b = p[(w+1) % p.length], items = r.items || [];
+  const np = [...p.slice(0, w+1), [(a[0]+b[0])/2, (a[1]+b[1])/2], ...p.slice(w+1)];
+  pushHouseHistory(r, p, items);
+  r.items = reprojectItems(p, np, items); r.pts = np; dropJointOverrides(r.id);
+  return w + 1;
+}
 $('#housePlan').addEventListener('pointerdown', e => {
-  if (!houseEditing || arranging || !e.isPrimary || !e.target.closest('[data-hc]')) return;
-  const svg = $('#hsvg'); if (!svg) return;
+  if (!houseEditing || arranging || !e.isPrimary) return;
+  const hc = e.target.closest('[data-hc]'), hm = e.target.closest('[data-hm]'), svg = $('#hsvg');
+  if ((!hc && !hm) || !svg) return;
   e.preventDefault();
-  const q = toMeters(svg, e), { i, k } = nearestCorner(q), r = house.rooms[i];
-  cdrag = { svg, i, k, start: q, moved: false, pts: r.pts.map(c => c.slice()), items: (r.items || []).map(it => ({ ...it })), axis: -longestAngle(r.pts) };
-  svg.setPointerCapture(e.pointerId);
+  const q = toMeters(svg, e);
+  let i, k;
+  if (hm){ const [ri, w] = hm.dataset.hm.split(':').map(Number); i = ri; k = insertCorner(ri, w); }
+  else ({ i, k } = nearestCorner(q));
+  const r = house.rooms[i];
+  cdrag = { i, k, start: q, moved: false, inserted: !!hm, pts: r.pts.map(c => c.slice()), items: (r.items || []).map(it => ({ ...it })), axis: -longestAngle(r.pts) };
+  if (hm) renderHouse(); // affiche le nouveau coin, sur un nouveau <svg>
+  cdrag.svg = $('#hsvg'); cdrag.svg.setPointerCapture(e.pointerId);
 });
 $('#housePlan').addEventListener('pointermove', e => {
   if (!cdrag) return;
   const q = toMeters(cdrag.svg, e), v = $('#housePlan')._view, dx = q[0] - cdrag.start[0], dy = q[1] - cdrag.start[1];
   if (!cdrag.moved && Math.hypot(dx, dy) * v.S < 4) return;
-  if (!cdrag.moved) houseHistory = houseHistory.concat({ room: house.rooms[cdrag.i], pts: cdrag.pts, items: cdrag.items }).slice(-60);
+  if (!cdrag.moved && !cdrag.inserted) pushHouseHistory(house.rooms[cdrag.i], cdrag.pts, cdrag.items);
   cdrag.moved = true;
   const r = house.rooms[cdrag.i], c = cdrag.pts[cdrag.k], np = cdrag.pts.map(p => p.slice());
   np[cdrag.k] = snapCorner(np, cdrag.k, [c[0]+dx, c[1]+dy], v, cdrag.axis);
@@ -3561,7 +3584,7 @@ $('#housePlan').addEventListener('pointermove', e => {
   const layer = $('#hsvg-layer');
   if (layer) layer.innerHTML = houseLayer(house.rooms, v, { ...$('#housePlan')._opts, selCorner: [cdrag.i, cdrag.k] });
 });
-const endCornerDrag = () => { if (!cdrag) return; const moved = cdrag.moved; cdrag = null; if (moved) save(); renderHouse(); };
+const endCornerDrag = () => { if (!cdrag) return; const changed = cdrag.moved || cdrag.inserted; cdrag = null; if (changed) save(); renderHouse(); };
 $('#housePlan').addEventListener('pointerup', endCornerDrag);
 $('#housePlan').addEventListener('pointercancel', endCornerDrag);
 $('#houseUndo').addEventListener('click', () => {
@@ -3733,11 +3756,13 @@ $('#roomPlan').addEventListener('pointercancel', endRoomDrag);
 attachZoom($('#roomPlan'), t => editing && !placing && !!t.closest('[data-corner],[data-mid],[data-item]'),
   () => { if (rdrag){ rdrag = null; undoEdit(); } });
 attachZoom($('#panelPlan'), t => !!t.closest('[data-item]'), () => {});
-attachZoom($('#housePlan'), t => arranging ? !!t.closest('[data-i]') : houseEditing && !works && !!t.closest('[data-hc]'),
+attachZoom($('#housePlan'), t => arranging ? !!t.closest('[data-i]') : houseEditing && !works && !!t.closest('[data-hc],[data-hm]'),
   () => {
     if (drag){ drag.idx.forEach((ri, k) => { house.rooms[ri].pts = drag.orig[k]; }); drag = null; renderHouse(); }
-    if (cdrag){ const r = house.rooms[cdrag.i]; r.pts = cdrag.pts; r.items = cdrag.items;
-      if (cdrag.moved) houseHistory = houseHistory.slice(0, -1); cdrag = null; renderHouse(); }
+    // Le pincement annule le glisser, et le coin inséré par un « + »
+    if (cdrag){ const r = house.rooms[cdrag.i], s = houseHistory[houseHistory.length - 1];
+      if (cdrag.moved || cdrag.inserted){ r.pts = s.pts; r.items = s.items; houseHistory = houseHistory.slice(0, -1); }
+      cdrag = null; renderHouse(); }
   });
 function renderItems(){
   const r = roomRef, p = r.pts, items = r.items || [];
